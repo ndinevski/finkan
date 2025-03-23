@@ -155,4 +155,101 @@ router.get('/columns/:id/tasks', async (req, res) => {
   }
 });
 
+// Delete workspace
+router.delete('/workspaces/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+
+    console.log('Attempting to delete workspace:', { workspaceId: id, userId });
+
+    // Check if user is owner of the workspace
+    const memberResult = await pool.query(
+      `SELECT role FROM workspace_members 
+       WHERE workspace_id = $1 AND profile_id = $2`,
+      [id, userId]
+    );
+
+    console.log('Workspace member check result:', memberResult.rows);
+
+    if (memberResult.rows.length === 0 || memberResult.rows[0].role !== "owner") {
+      console.log('User is not authorized to delete workspace');
+      return res.status(403).json({ error: "Not authorized to delete this workspace" });
+    }
+
+    // Delete workspace (cascade will handle related records)
+    await pool.query("DELETE FROM workspaces WHERE id = $1", [id]);
+
+    res.json({ message: "Workspace deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting workspace:", error);
+    res.status(500).json({ error: "Failed to delete workspace" });
+  }
+});
+
+// Create workspace
+router.post('/workspaces', async (req, res) => {
+  try {
+    const { name, icon, description } = req.body;
+    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+
+    console.log('Creating workspace:', { name, icon, description, userId });
+
+    // Start a transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Create workspace
+      const workspaceResult = await client.query(
+        `INSERT INTO workspaces (name, icon, description)
+         VALUES ($1, $2, $3)
+         RETURNING *`,
+        [name, icon, description]
+      );
+      const workspace = workspaceResult.rows[0];
+      console.log('Created workspace:', workspace);
+
+      // Add creator as owner
+      const memberResult = await client.query(
+        `INSERT INTO workspace_members (workspace_id, profile_id, role)
+         VALUES ($1, $2, 'owner')
+         RETURNING *`,
+        [workspace.id, userId]
+      );
+      console.log('Created workspace member:', memberResult.rows[0]);
+
+      await client.query('COMMIT');
+      res.json(workspace);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in create workspace transaction:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("Error creating workspace:", error);
+    res.status(500).json({ error: "Failed to create workspace" });
+  }
+});
+
+// Get all workspaces for current user
+router.get('/workspaces', async (req, res) => {
+  try {
+    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+    const result = await pool.query(
+      `SELECT w.*, wm.role 
+       FROM workspaces w
+       JOIN workspace_members wm ON w.id = wm.workspace_id
+       WHERE wm.profile_id = $1`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching workspaces:", error);
+    res.status(500).json({ error: "Failed to fetch workspaces" });
+  }
+});
+
 export default router; 

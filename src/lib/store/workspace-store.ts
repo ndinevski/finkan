@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { db } from '../db/client';
 import { Workspace, WorkspaceMember, Profile, Project } from '../db/types';
 import { auth } from '../auth/client';
+import { api } from '../api/client';
+import { API_BASE_URL } from "../config";
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -9,14 +11,16 @@ interface WorkspaceState {
   members: WorkspaceMember[];
   projects: Project[];
   isLoading: boolean;
+  error: string | null;
   fetchWorkspaces: () => Promise<void>;
   fetchWorkspace: (id: string) => Promise<void>;
-  createWorkspace: (name: string, icon?: string, description?: string) => Promise<void>;
+  createWorkspace: (data: { name: string; icon?: string; description?: string }) => Promise<void>;
   setCurrentWorkspace: (workspace: Workspace | null) => void;
   fetchMembers: (workspaceId: string) => Promise<void>;
   inviteMember: (workspaceId: string, email: string, role?: WorkspaceMember['role']) => Promise<void>;
   fetchProjects: (workspaceId: string) => Promise<void>;
   createProject: (workspaceId: string, name: string, description?: string) => Promise<void>;
+  deleteWorkspace: (id: string) => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -25,10 +29,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   members: [],
   projects: [],
   isLoading: false,
+  error: null,
   fetchWorkspaces: async () => {
-    set({ isLoading: true });
-    const result = await db.query<Workspace>('SELECT * FROM workspaces ORDER BY created_at DESC');
-    set({ workspaces: result.rows, isLoading: false });
+    try {
+      set({ isLoading: true, error: null });
+      const response = await fetch(`${API_BASE_URL}/workspaces`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch workspaces");
+      }
+      const workspaces = await response.json();
+      set({ workspaces });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Failed to fetch workspaces" });
+    } finally {
+      set({ isLoading: false });
+    }
   },
   fetchWorkspace: async (id: string) => {
     set({ isLoading: true });
@@ -37,15 +52,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       set({ currentWorkspace: result.rows[0], isLoading: false });
     }
   },
-  createWorkspace: async (name: string, icon?: string, description?: string) => {
-    const { data: { user } } = await auth.getSession();
-    if (!user) throw new Error('Not authenticated');
-
-    await db.query(
-      'INSERT INTO workspaces (name, icon, description, created_by) VALUES ($1, $2, $3, $4)',
-      [name, icon || '💼', description, user.id]
-    );
-    await get().fetchWorkspaces();
+  createWorkspace: async (data) => {
+    try {
+      set({ isLoading: true, error: null });
+      const workspace = await api.createWorkspace(data);
+      set((state) => ({
+        workspaces: [...state.workspaces, workspace],
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Failed to create workspace" });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
   },
   setCurrentWorkspace: (workspace) => set({ currentWorkspace: workspace }),
   fetchMembers: async (workspaceId: string) => {
@@ -87,5 +106,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       [workspaceId, name, description, user.id]
     );
     await get().fetchProjects(workspaceId);
+  },
+  deleteWorkspace: async (id) => {
+    try {
+      set({ isLoading: true, error: null });
+      await api.deleteWorkspace(id);
+      set((state) => ({
+        workspaces: state.workspaces.filter((w) => w.id !== id),
+      }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "Failed to delete workspace" });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));

@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- Insert a test profile
 INSERT INTO profiles (id, email, full_name)
 VALUES (
-    '123e4567-e89b-12d3-a456-426614174000',
+    '00000000-0000-0000-0000-000000000001',
     'test@example.com',
     'Test User'
 ) ON CONFLICT (id) DO NOTHING; 
