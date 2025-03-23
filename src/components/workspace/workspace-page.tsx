@@ -208,15 +208,15 @@ export function WorkspacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <header className="bg-surface-light dark:bg-surface-dark shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <span className="text-2xl mr-2">
                 {currentWorkspace.icon || "💼"}
               </span>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
                 {currentWorkspace.name}
               </h1>
             </div>
@@ -224,11 +224,15 @@ export function WorkspacePage() {
               <Button
                 onClick={() => setShowInviteDialog(true)}
                 variant="outline"
+                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <Users className="h-4 w-4 mr-2" />
                 Invite
               </Button>
-              <Button onClick={() => setShowCreateProjectDialog(true)}>
+              <Button
+                onClick={() => setShowCreateProjectDialog(true)}
+                className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 New Project
               </Button>
@@ -243,8 +247,10 @@ export function WorkspacePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <div>
-            <h2 className="text-lg font-semibold mb-4">Team Members</h2>
-            <div className="bg-white shadow rounded-lg divide-y">
+            <h2 className="text-lg font-semibold mb-4 text-text-light dark:text-text-dark">
+              Team Members
+            </h2>
+            <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
               {members.map((member) => (
                 <div
                   key={member.profile_id}
@@ -258,17 +264,19 @@ export function WorkspacePage() {
                         className="h-8 w-8 rounded-full mr-3"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                        <span className="text-sm font-medium text-gray-600">
+                      <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                           {(member.full_name || member.email)[0].toUpperCase()}
                         </span>
                       </div>
                     )}
                     <div>
-                      <p className="font-medium">
+                      <p className="font-medium text-text-light dark:text-text-dark">
                         {member.full_name || member.email}
                       </p>
-                      <p className="text-sm text-gray-500">{member.role}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {member.role}
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,6 +12,8 @@ import { WorkspaceList } from "./components/workspace/workspace-list";
 import { WorkspacePage } from "./components/workspace/workspace-page";
 import { ProjectBoard } from "./components/project/project-board";
 import { Toaster } from "./components/ui/toaster";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "./components/ui/button";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -29,6 +31,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { setUser } = useAuthStore();
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     auth.getSession().then(({ data: { user } }) => {
@@ -38,8 +41,16 @@ function App() {
     });
   }, [setUser]);
 
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDark]);
+
   return (
-    <>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
       <Router>
         <Routes>
           <Route path="/auth" element={<AuthForm />} />
@@ -47,16 +58,30 @@ function App() {
             path="/"
             element={
               <PrivateRoute>
-                <div className="min-h-screen bg-gray-100">
-                  <nav className="bg-white shadow-sm">
+                <div className="min-h-screen">
+                  <nav className="bg-surface-light dark:bg-surface-dark shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                       <div className="flex justify-between h-16">
                         <div className="flex">
                           <div className="flex-shrink-0 flex items-center">
-                            <h1 className="text-xl font-bold text-gray-900">
+                            <h1 className="text-xl font-bold text-primary-dark dark:text-primary-light">
                               FinKan
                             </h1>
                           </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsDark(!isDark)}
+                            className="mr-2"
+                          >
+                            {isDark ? (
+                              <Sun className="h-5 w-5" />
+                            ) : (
+                              <Moon className="h-5 w-5" />
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -90,7 +115,7 @@ function App() {
         </Routes>
       </Router>
       <Toaster />
-    </>
+    </div>
   );
 }
 

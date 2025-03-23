@@ -74,8 +74,14 @@ export function WorkspaceList() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Workspaces</h2>
-        <Button size="sm" onClick={() => setShowDialog(true)}>
+        <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">
+          Workspaces
+        </h2>
+        <Button
+          size="sm"
+          onClick={() => setShowDialog(true)}
+          className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary"
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Workspace
         </Button>
@@ -85,13 +91,17 @@ export function WorkspaceList() {
         {workspaces.map((workspace) => (
           <div
             key={workspace.id}
-            className="flex items-center p-3 rounded-lg border hover:bg-gray-50 transition-colors"
+            className="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <span className="text-2xl mr-3">{workspace.icon || "💼"}</span>
             <div className="text-left">
-              <h3 className="font-medium">{workspace.name}</h3>
+              <h3 className="font-medium text-text-light dark:text-text-dark">
+                {workspace.name}
+              </h3>
               {workspace.description && (
-                <p className="text-sm text-gray-500">{workspace.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {workspace.description}
+                </p>
               )}
             </div>
             <div className="flex gap-2 ml-auto">
@@ -99,6 +109,7 @@ export function WorkspaceList() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleWorkspaceClick(workspace)}
+                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Open
               </Button>
