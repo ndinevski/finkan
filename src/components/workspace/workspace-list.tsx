@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspaceStore } from "@/lib/store/workspace-store";
 import { Workspace } from "@/lib/db/types";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CreateWorkspaceDialog } from "./create-workspace-dialog";
 import { DeleteWorkspaceDialog } from "./delete-workspace-dialog";
@@ -107,9 +107,9 @@ export function WorkspaceList() {
             <div className="flex gap-2 ml-auto">
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 onClick={() => handleWorkspaceClick(workspace)}
-                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
+                className="text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200"
               >
                 Open Workspace
               </Button>
@@ -120,9 +120,9 @@ export function WorkspaceList() {
                   setSelectedWorkspace(workspace);
                   setIsDeleteDialogOpen(true);
                 }}
-                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+                className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-500"
               >
-                Delete
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>

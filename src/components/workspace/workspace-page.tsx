@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Plus, Users, Settings, ArrowLeft, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Users,
+  Settings,
+  ArrowLeft,
+  Trash2,
+  ExternalLink,
+} from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace-store";
+import { useProjectStore } from "@/lib/store/project-store";
+import { Project } from "@/lib/db/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Header } from "../layout/header";
@@ -161,6 +170,60 @@ function CreateProjectDialog({
   );
 }
 
+interface DeleteProjectDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: () => Promise<void>;
+  isLoading: boolean;
+  projectName: string;
+}
+
+function DeleteProjectDialog({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  projectName,
+}: DeleteProjectDialogProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
+        <DialogHeader>
+          <DialogTitle className="text-text-light dark:text-text-dark">
+            Delete Project
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <p className="text-text-light dark:text-text-dark">
+            Are you sure you want to delete the project "{projectName}"? This
+            action cannot be undone.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+            className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onSubmit}
+            disabled={isLoading}
+            className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+          >
+            {isLoading ? "Deleting..." : "Delete Project"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface WorkspacePageProps {
   isDark: boolean;
   onToggleDark: () => void;
@@ -180,12 +243,16 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
     createProject,
     deleteWorkspace,
   } = useWorkspaceStore();
+  const { archiveProject } = useProjectStore();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteProjectDialog, setShowDeleteProjectDialog] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   useEffect(() => {
     if (workspaceId) {
@@ -246,6 +313,21 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!projectToDelete || !workspaceId) return;
+    try {
+      setIsDeletingProject(true);
+      await archiveProject(projectToDelete.id);
+      await fetchProjects(workspaceId);
+      setShowDeleteProjectDialog(false);
+      setProjectToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col w-full">
       <Header isDark={isDark} onToggleDark={onToggleDark} />
@@ -298,8 +380,7 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
                 className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
                 onClick={() => setShowDeleteDialog(true)}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Workspace
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -351,20 +432,44 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
               <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg p-4">
                 <div className="grid gap-4">
                   {projects.map((project) => (
-                    <button
+                    <div
                       key={project.id}
-                      onClick={() => handleProjectClick(project.id)}
-                      className="text-left p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     >
-                      <h4 className="font-medium text-text-light dark:text-text-dark">
-                        {project.name}
-                      </h4>
-                      {project.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {project.description}
-                        </p>
-                      )}
-                    </button>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-text-light dark:text-text-dark">
+                            {project.name}
+                          </h4>
+                          {project.description && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Button
+                            onClick={() => handleProjectClick(project.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-600"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setProjectToDelete(project);
+                              setShowDeleteProjectDialog(true);
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                   <Button
                     onClick={() => setShowCreateProjectDialog(true)}
@@ -401,6 +506,17 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
         onSubmit={handleDeleteWorkspace}
         isLoading={isDeleting}
         workspaceName={currentWorkspace.name}
+      />
+
+      <DeleteProjectDialog
+        isOpen={showDeleteProjectDialog}
+        onClose={() => {
+          setShowDeleteProjectDialog(false);
+          setProjectToDelete(null);
+        }}
+        onSubmit={handleDeleteProject}
+        isLoading={isDeletingProject}
+        projectName={projectToDelete?.name || ""}
       />
     </div>
   );
