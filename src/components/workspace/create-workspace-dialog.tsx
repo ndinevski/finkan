@@ -68,13 +68,18 @@ export function CreateWorkspaceDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <DialogTitle>Create New Workspace</DialogTitle>
+          <DialogTitle className="text-text-light dark:text-text-dark">
+            Create New Workspace
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
+            <label
+              htmlFor="name"
+              className="text-sm font-medium text-text-light dark:text-text-dark"
+            >
               Workspace Name
             </label>
             <Input
@@ -83,20 +88,23 @@ export function CreateWorkspaceDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter workspace name"
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-text-light dark:text-text-dark"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Choose Icon</label>
-            <div className="grid grid-cols-10 gap-2">
+            <label className="text-sm font-medium text-text-light dark:text-text-dark">
+              Choose Icon
+            </label>
+            <div className="grid grid-cols-10 gap-2 p-1">
               {EMOJI_OPTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => setSelectedEmoji(emoji)}
-                  className={`p-2 text-xl rounded hover:bg-gray-100 ${
+                  className={`w-full aspect-square flex items-center justify-center text-xl rounded transition-colors ${
                     selectedEmoji === emoji
-                      ? "bg-gray-100 ring-2 ring-blue-500"
-                      : ""
+                      ? "bg-primary/10 dark:bg-primary-light/10 ring-2 ring-primary dark:ring-primary-light"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800"
                   }`}
                 >
                   {emoji}
@@ -105,7 +113,10 @@ export function CreateWorkspaceDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
+            <label
+              htmlFor="description"
+              className="text-sm font-medium text-text-light dark:text-text-dark"
+            >
               Description
             </label>
             <Textarea
@@ -114,6 +125,7 @@ export function CreateWorkspaceDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter a short description"
               rows={3}
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-text-light dark:text-text-dark"
             />
           </div>
           <DialogFooter>
@@ -122,10 +134,15 @@ export function CreateWorkspaceDialog({
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
+              className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !name.trim()}>
+            <Button
+              type="submit"
+              disabled={isLoading || !name.trim()}
+              className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary text-white"
+            >
               {isLoading ? "Creating..." : "Create Workspace"}
             </Button>
           </DialogFooter>

@@ -80,7 +80,7 @@ export function WorkspaceList() {
         <Button
           size="sm"
           onClick={() => setShowDialog(true)}
-          className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary"
+          className="bg-primary-dark hover:bg-primary"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Workspace
@@ -106,12 +106,12 @@ export function WorkspaceList() {
             </div>
             <div className="flex gap-2 ml-auto">
               <Button
-                variant="outline"
                 size="sm"
+                variant="outline"
                 onClick={() => handleWorkspaceClick(workspace)}
-                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
               >
-                Open
+                Open Workspace
               </Button>
               <Button
                 variant="destructive"
@@ -120,6 +120,7 @@ export function WorkspaceList() {
                   setSelectedWorkspace(workspace);
                   setIsDeleteDialogOpen(true);
                 }}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
               >
                 Delete
               </Button>
@@ -141,7 +142,7 @@ export function WorkspaceList() {
           setIsDeleteDialogOpen(false);
           setSelectedWorkspace(null);
         }}
-        onConfirm={handleDeleteWorkspace}
+        onSubmit={handleDeleteWorkspace}
         workspaceName={selectedWorkspace?.name || ""}
         isLoading={isCreating}
       />

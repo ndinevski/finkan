@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Plus, Users, Settings } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Plus, Users, Settings, ArrowLeft, Trash2 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace-store";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Header } from "../layout/header";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../ui/dialog";
+import { DeleteWorkspaceDialog } from "./delete-workspace-dialog";
 
 interface InviteMemberDialogProps {
   isOpen: boolean;
@@ -97,13 +99,18 @@ function CreateProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle className="text-text-light dark:text-text-dark">
+            Create New Project
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
+            <label
+              htmlFor="name"
+              className="text-sm font-medium text-text-light dark:text-text-dark"
+            >
               Project Name
             </label>
             <Input
@@ -112,10 +119,14 @@ function CreateProjectDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter project name"
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-text-light dark:text-text-dark"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
+            <label
+              htmlFor="description"
+              className="text-sm font-medium text-text-light dark:text-text-dark"
+            >
               Description (Optional)
             </label>
             <Input
@@ -123,6 +134,7 @@ function CreateProjectDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter project description"
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-text-light dark:text-text-dark"
             />
           </div>
           <DialogFooter>
@@ -131,10 +143,15 @@ function CreateProjectDialog({
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
+              className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !name.trim()}>
+            <Button
+              type="submit"
+              disabled={isLoading || !name.trim()}
+              className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary text-white"
+            >
               {isLoading ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
@@ -144,7 +161,12 @@ function CreateProjectDialog({
   );
 }
 
-export function WorkspacePage() {
+interface WorkspacePageProps {
+  isDark: boolean;
+  onToggleDark: () => void;
+}
+
+export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const {
@@ -156,11 +178,14 @@ export function WorkspacePage() {
     fetchProjects,
     inviteMember,
     createProject,
+    deleteWorkspace,
   } = useWorkspaceStore();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (workspaceId) {
@@ -207,109 +232,149 @@ export function WorkspacePage() {
     navigate(`/board/${projectId}`);
   };
 
+  const handleDeleteWorkspace = async () => {
+    if (!workspaceId) return;
+    try {
+      setIsDeleting(true);
+      await deleteWorkspace(workspaceId);
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to delete workspace:", error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <header className="bg-surface-light dark:bg-surface-dark shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-2xl mr-2">
-                {currentWorkspace.icon || "💼"}
-              </span>
-              <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
-                {currentWorkspace.name}
-              </h1>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col w-full">
+      <Header isDark={isDark} onToggleDark={onToggleDark} />
+
+      <main className="flex-1 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 px-4 py-2"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <span className="text-3xl">{currentWorkspace.icon || "💼"}</span>
+              <div>
+                <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">
+                  {currentWorkspace.name}
+                </h2>
+                {currentWorkspace.description && (
+                  <p className="mt-1 text-gray-500 dark:text-gray-400">
+                    {currentWorkspace.description}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <Button
                 onClick={() => setShowInviteDialog(true)}
                 variant="outline"
-                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
               >
                 <Users className="h-4 w-4 mr-2" />
                 Invite
               </Button>
               <Button
                 onClick={() => setShowCreateProjectDialog(true)}
-                className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary"
+                className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Project
               </Button>
-              <Button variant="ghost">
-                <Settings className="h-4 w-4" />
+              <Button
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Workspace
               </Button>
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <div>
-            <h2 className="text-lg font-semibold mb-4 text-text-light dark:text-text-dark">
-              Team Members
-            </h2>
-            <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
-              {members.map((member) => (
-                <div
-                  key={member.profile_id}
-                  className="p-4 flex items-center justify-between"
-                >
-                  <div className="flex items-center">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.full_name || member.email}
-                        className="h-8 w-8 rounded-full mr-3"
-                      />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                          {(member.full_name || member.email)[0].toUpperCase()}
-                        </span>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-text-light dark:text-text-dark">
+                Team Members
+              </h3>
+              <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+                {members.map((member) => (
+                  <div
+                    key={member.profile_id}
+                    className="p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.full_name || member.email}
+                          className="h-8 w-8 rounded-full mr-3"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {(member.full_name ||
+                              member.email)[0].toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-text-light dark:text-text-dark">
+                          {member.full_name || member.email}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {member.role}
+                        </p>
                       </div>
-                    )}
-                    <div>
-                      <p className="font-medium text-text-light dark:text-text-dark">
-                        {member.full_name || member.email}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {member.role}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Projects</h2>
-            <div className="bg-white shadow rounded-lg p-4">
-              <div className="grid gap-4">
-                {projects.map((project) => (
-                  <button
-                    key={project.id}
-                    onClick={() => handleProjectClick(project.id)}
-                    className="text-left p-4 rounded-lg border hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="font-medium">{project.name}</h3>
-                    {project.description && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        {project.description}
-                      </p>
-                    )}
-                  </button>
                 ))}
-                <Button
-                  onClick={() => setShowCreateProjectDialog(true)}
-                  variant="outline"
-                  className="h-24"
-                >
-                  <Plus className="h-6 w-6 mr-2" />
-                  Create New Project
-                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-text-light dark:text-text-dark">
+                Projects
+              </h3>
+              <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg p-4">
+                <div className="grid gap-4">
+                  {projects.map((project) => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectClick(project.id)}
+                      className="text-left p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <h4 className="font-medium text-text-light dark:text-text-dark">
+                        {project.name}
+                      </h4>
+                      {project.description && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {project.description}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                  <Button
+                    onClick={() => setShowCreateProjectDialog(true)}
+                    variant="outline"
+                    className="h-24 border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-primary dark:hover:border-primary-light hover:bg-gray-50 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
+                  >
+                    <Plus className="h-6 w-6 mr-2" />
+                    Create New Project
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -328,6 +393,14 @@ export function WorkspacePage() {
         onClose={() => setShowCreateProjectDialog(false)}
         onSubmit={handleCreateProject}
         isLoading={isCreatingProject}
+      />
+
+      <DeleteWorkspaceDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onSubmit={handleDeleteWorkspace}
+        isLoading={isDeleting}
+        workspaceName={currentWorkspace.name}
       />
     </div>
   );

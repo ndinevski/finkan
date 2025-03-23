@@ -27,9 +27,10 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
+        default:
+          "border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark text-text-light dark:text-text-dark",
         destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+          "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400",
       },
     },
     defaultVariants: {
@@ -75,7 +76,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute right-2 top-2 rounded-md p-1 text-text-light/50 dark:text-text-dark/50 opacity-0 transition-opacity hover:text-text-light dark:hover:text-text-dark focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-400 group-[.destructive]:hover:text-red-600 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
       className
     )}
     toast-close=""
@@ -92,7 +93,10 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-semibold", className)}
+    className={cn(
+      "text-sm font-semibold text-text-light dark:text-text-dark",
+      className
+    )}
     {...props}
   />
 ));
@@ -104,7 +108,10 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-sm opacity-90", className)}
+    className={cn(
+      "text-sm opacity-90 text-text-light/90 dark:text-text-dark/90",
+      className
+    )}
     {...props}
   />
 ));
