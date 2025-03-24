@@ -13,6 +13,7 @@ import { WorkspacePage } from "./components/workspace/workspace-page";
 import { ProjectBoard } from "./components/project/project-board";
 import { Toaster } from "./components/ui/toaster";
 import { Header } from "./components/layout/header";
+import { Sidebar } from "./components/layout/sidebar";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -30,7 +31,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const { setUser } = useAuthStore();
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     auth.getSession().then(({ data: { user } }) => {
@@ -62,13 +63,16 @@ function App() {
                     isDark={isDark}
                     onToggleDark={() => setIsDark(!isDark)}
                   />
-                  <main className="flex-1 w-full">
-                    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                      <div className="px-4 py-6 sm:px-0">
-                        <WorkspaceList />
+                  <div className="flex flex-1">
+                    <Sidebar />
+                    <main className="flex-1 w-full ml-64">
+                      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                        <div className="px-4 py-6 sm:px-0">
+                          <WorkspaceList />
+                        </div>
                       </div>
-                    </div>
-                  </main>
+                    </main>
+                  </div>
                 </div>
               </PrivateRoute>
             }
@@ -77,10 +81,21 @@ function App() {
             path="/workspace/:workspaceId"
             element={
               <PrivateRoute>
-                <WorkspacePage
-                  isDark={isDark}
-                  onToggleDark={() => setIsDark(!isDark)}
-                />
+                <div className="min-h-screen flex flex-col w-full">
+                  <Header
+                    isDark={isDark}
+                    onToggleDark={() => setIsDark(!isDark)}
+                  />
+                  <div className="flex flex-1">
+                    <Sidebar />
+                    <main className="flex-1 w-full ml-64">
+                      <WorkspacePage
+                        isDark={isDark}
+                        onToggleDark={() => setIsDark(!isDark)}
+                      />
+                    </main>
+                  </div>
+                </div>
               </PrivateRoute>
             }
           />
@@ -88,10 +103,21 @@ function App() {
             path="/board/:boardId"
             element={
               <PrivateRoute>
-                <ProjectBoard
-                  isDark={isDark}
-                  onToggleDark={() => setIsDark(!isDark)}
-                />
+                <div className="min-h-screen flex flex-col w-full">
+                  <Header
+                    isDark={isDark}
+                    onToggleDark={() => setIsDark(!isDark)}
+                  />
+                  <div className="flex flex-1">
+                    <Sidebar />
+                    <main className="flex-1 w-full ml-64">
+                      <ProjectBoard
+                        isDark={isDark}
+                        onToggleDark={() => setIsDark(!isDark)}
+                      />
+                    </main>
+                  </div>
+                </div>
               </PrivateRoute>
             }
           />

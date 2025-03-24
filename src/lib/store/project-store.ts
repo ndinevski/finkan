@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { db } from '../db/client';
 import { Project } from '../db/types';
 import { auth } from '../auth/client';
+import { useTaskStore } from './task-store';
 
 interface ProjectState {
   projects: Project[];
   currentProject: Project | null;
   isLoading: boolean;
   fetchProjects: (workspaceId: string) => Promise<void>;
+  fetchProject: (projectId: string) => Promise<void>;
   createProject: (workspaceId: string, name: string, description?: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   archiveProject: (projectId: string) => Promise<void>;
@@ -25,15 +27,45 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     );
     set({ projects: result.rows, isLoading: false });
   },
+  fetchProject: async (projectId: string) => {
+    set({ isLoading: true });
+    const result = await db.query<Project>(
+      'SELECT * FROM projects WHERE id = $1',
+      [projectId]
+    );
+    if (result.rows[0]) {
+      set({ currentProject: result.rows[0], isLoading: false });
+    }
+  },
   createProject: async (workspaceId: string, name: string, description?: string) => {
     const { data: { user } } = await auth.getSession();
     if (!user) throw new Error('Not authenticated');
 
-    await db.query(
-      'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4)',
-      [workspaceId, name, description, user.id]
-    );
-    await get().fetchProjects(workspaceId);
+    // Start a transaction
+    await db.query('BEGIN');
+
+    try {
+      // Create project
+      const projectResult = await db.query<Project>(
+        'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
+        [workspaceId, name, description, user.id]
+      );
+      const project = projectResult.rows[0];
+
+      // Create default columns using TaskStore
+      const taskStore = useTaskStore.getState();
+      await taskStore.createDefaultColumns(project.id, [
+        { name: 'To Do', position: 0 },
+        { name: 'In Progress', position: 1 },
+        { name: 'Done', position: 2 },
+      ]);
+
+      await db.query('COMMIT');
+      await get().fetchProjects(workspaceId);
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
   },
   setCurrentProject: (project) => set({ currentProject: project }),
   archiveProject: async (projectId: string) => {

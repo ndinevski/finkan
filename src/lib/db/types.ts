@@ -22,6 +22,7 @@ export interface Workspace {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
+  role: WorkspaceRole;
 }
 
 export interface WorkspaceMember {
