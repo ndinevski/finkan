@@ -99,7 +99,7 @@ export function WorkspaceList() {
                 {workspace.name}
               </h3>
               {workspace.description && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[300px]">
                   {workspace.description}
                 </p>
               )}

@@ -330,36 +330,24 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark flex flex-col w-full">
-      <Header isDark={isDark} onToggleDark={onToggleDark} />
-
+      <Header
+        isDark={isDark}
+        onToggleDark={onToggleDark}
+        onBack={() => navigate(-1)}
+      />
       <main className="flex-1 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6">
+          <div className="flex items-start justify-between mb-4">
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => navigate(-1)}
-              className="text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-gray-800 px-4 py-2"
+              className="hover:bg-gray-100 dark:hover:bg-gray-800"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-          </div>
-
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <span className="text-3xl">{currentWorkspace.icon || "💼"}</span>
-              <div>
-                <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">
-                  {currentWorkspace.name}
-                </h2>
-                {currentWorkspace.description && (
-                  <p className="mt-1 text-gray-500 dark:text-gray-400">
-                    {currentWorkspace.description}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-start space-x-2">
               <Button
                 onClick={() => setShowInviteDialog(true)}
                 variant="outline"
@@ -382,6 +370,21 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
+            </div>
+          </div>
+          <div className="flex items-start space-x-4 mb-8">
+            <span className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary/10 dark:bg-primary-light/10 flex items-center justify-center text-xl">
+              {currentWorkspace.icon || "💼"}
+            </span>
+            <div>
+              <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">
+                {currentWorkspace.name}
+              </h2>
+              {currentWorkspace.description && (
+                <p className="mt-1 text-gray-500 dark:text-gray-400 max-w-xl break-words whitespace-pre-wrap">
+                  {currentWorkspace.description}
+                </p>
+              )}
             </div>
           </div>
 
@@ -430,24 +433,26 @@ export function WorkspacePage({ isDark, onToggleDark }: WorkspacePageProps) {
                 Projects
               </h3>
               <div className="bg-surface-light dark:bg-surface-dark shadow rounded-lg p-4">
-                <div className="grid gap-4">
+                <div className="flex flex-col gap-4">
                   {projects.map((project) => (
                     <div
                       key={project.id}
-                      className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      className="w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-text-light dark:text-text-dark">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-text-light dark:text-text-dark truncate">
                             {project.name}
                           </h4>
                           {project.description && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              {project.description}
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 break-words whitespace-pre-wrap line-clamp-2 overflow-hidden">
+                              {project.description.length > 100
+                                ? `${project.description.substring(0, 100)}...`
+                                : project.description}
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center space-x-2 ml-4">
+                        <div className="flex items-center space-x-2 shrink-0">
                           <Button
                             onClick={() => handleProjectClick(project.id)}
                             variant="ghost"

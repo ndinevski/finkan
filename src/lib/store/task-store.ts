@@ -8,7 +8,7 @@ interface TaskState {
   columns: Column[];
   isLoading: boolean;
   fetchTasks: (columnIds: string[]) => Promise<void>;
-  fetchColumns: (boardId: string) => Promise<void>;
+  fetchColumns: (boardId: string) => Promise<{ rows: Column[] }>;
   createTask: (
     columnId: string,
     title: string,
@@ -22,6 +22,7 @@ interface TaskState {
     updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date'>>
   ) => Promise<void>;
   createColumn: (boardId: string, name: string, position: number) => Promise<void>;
+  createDefaultColumns: (boardId: string, columns: { name: string; position: number }[]) => Promise<void>;
   updateColumnPosition: (columnId: string, position: number) => Promise<void>;
 }
 
@@ -46,6 +47,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     if (result.rows.length > 0) {
       await get().fetchTasks(result.rows.map((col) => col.id));
     }
+    return result;
   },
   createTask: async (columnId, title, description, priority = 'medium', dueDate) => {
     const { data: { user } } = await auth.getSession();
@@ -85,11 +87,47 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }
   },
   createColumn: async (boardId, name, position) => {
-    await db.query(
-      'INSERT INTO columns (project_id, name, position) VALUES ($1, $2, $3)',
+    const result = await db.query<Column>(
+      'INSERT INTO columns (project_id, name, position) VALUES ($1, $2, $3) RETURNING *',
       [boardId, name, position]
     );
-    await get().fetchColumns(boardId);
+    set((state) => ({ 
+      columns: [...state.columns, result.rows[0]].sort((a, b) => a.position - b.position)
+    }));
+  },
+  createDefaultColumns: async (boardId, columns) => {
+    // First, check if columns already exist
+    const existingColumns = await db.query<Column>(
+      'SELECT * FROM columns WHERE project_id = $1',
+      [boardId]
+    );
+
+    if (existingColumns.rows.length > 0) {
+      return; // Don't create columns if they already exist
+    }
+
+    // Use a transaction to ensure atomicity
+    await db.query('BEGIN');
+
+    try {
+      // Insert columns one by one to ensure no duplicates
+      const insertedColumns: Column[] = [];
+      for (const col of columns) {
+        const result = await db.query<Column>(
+          'INSERT INTO columns (project_id, name, position) VALUES ($1, $2, $3) RETURNING *',
+          [boardId, col.name, col.position]
+        );
+        insertedColumns.push(result.rows[0]);
+      }
+      
+      await db.query('COMMIT');
+      
+      // Update the state with the new columns
+      set({ columns: insertedColumns });
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
   },
   updateColumnPosition: async (columnId, position) => {
     await db.query(
