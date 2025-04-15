@@ -14,6 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { CreateTaskDialog } from "@/components/task/CreateTaskDialog";
 
 export function ProjectBoard() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -145,7 +146,7 @@ export function ProjectBoard() {
           {columns.map((column) => (
             <div
               key={column.id}
-              className="w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg p-4"
+              className="w-80 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-text-light dark:text-text-dark">
@@ -156,7 +157,7 @@ export function ProjectBoard() {
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 flex-grow overflow-y-auto mb-4">
                 {tasks
                   .filter((task) => task.column_id === column.id)
                   .map((task) => (
@@ -221,6 +222,20 @@ export function ProjectBoard() {
                     </div>
                   ))}
               </div>
+
+              <CreateTaskDialog
+                columnId={column.id}
+                projectId={boardId || ""}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-sm text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add task
+                  </Button>
+                }
+              />
             </div>
           ))}
         </div>

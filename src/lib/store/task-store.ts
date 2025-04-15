@@ -14,12 +14,15 @@ interface TaskState {
     title: string,
     description?: string,
     priority?: Task['priority'],
-    dueDate?: string
+    dueDate?: string,
+    assignee_id?: string | null,
+    is_recurring?: boolean,
+    recurrence_pattern?: string | null
   ) => Promise<void>;
   updateTaskStatus: (taskId: string, columnId: string, position: number) => Promise<void>;
   updateTaskDetails: (
     taskId: string,
-    updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date'>>
+    updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date' | 'assignee_id' | 'is_recurring' | 'recurrence_pattern'>>
   ) => Promise<void>;
   createColumn: (boardId: string, name: string, position: number) => Promise<void>;
   createDefaultColumns: (boardId: string, columns: { name: string; position: number }[]) => Promise<void>;
@@ -49,7 +52,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }
     return result;
   },
-  createTask: async (columnId, title, description, priority = 'medium', dueDate) => {
+  createTask: async (
+    columnId,
+    title,
+    description,
+    priority = 'medium',
+    dueDate,
+    assignee_id = null,
+    is_recurring = false,
+    recurrence_pattern = null
+  ) => {
     const { data: { user } } = await auth.getSession();
     if (!user) throw new Error('Not authenticated');
 
@@ -59,10 +71,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     );
     const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
 
-    await db.query(
-      'INSERT INTO tasks (column_id, title, description, priority, due_date, position, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [columnId, title, description, priority, dueDate, position, user.id]
-    );
+    const queryText = `
+      INSERT INTO tasks (
+        column_id, title, description, priority, due_date, position, created_by,
+        assignee_id, is_recurring, recurrence_pattern
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `;
+    const queryParams = [
+      columnId, title, description, priority, dueDate, position, user.id,
+      assignee_id, is_recurring, recurrence_pattern
+    ];
+
+    await db.query(queryText, queryParams);
     await get().fetchTasks([columnId]);
   },
   updateTaskStatus: async (taskId, columnId, position) => {
@@ -74,12 +94,17 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     await get().fetchTasks(columns.map((col) => col.id));
   },
   updateTaskDetails: async (taskId, updates) => {
-    const setClause = Object.entries(updates)
-      .map(([key, _], index) => `${key} = $${index + 2}`)
+    const validUpdates = Object.entries(updates).filter(([, value]) => value !== undefined);
+    if (validUpdates.length === 0) return;
+
+    const setClause = validUpdates
+      .map(([key], index) => `${key} = $${index + 2}`)
       .join(', ');
+    const queryParams = [taskId, ...validUpdates.map(([, value]) => value)];
+
     await db.query(
-      `UPDATE tasks SET ${setClause} WHERE id = $1`,
-      [taskId, ...Object.values(updates)]
+      `UPDATE tasks SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      queryParams
     );
     const task = get().tasks.find((t) => t.id === taskId);
     if (task) {
@@ -96,21 +121,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }));
   },
   createDefaultColumns: async (boardId, columns) => {
-    // First, check if columns already exist
     const existingColumns = await db.query<Column>(
       'SELECT * FROM columns WHERE project_id = $1',
       [boardId]
     );
 
     if (existingColumns.rows.length > 0) {
-      return; // Don't create columns if they already exist
+      return;
     }
 
-    // Use a transaction to ensure atomicity
     await db.query('BEGIN');
 
     try {
-      // Insert columns one by one to ensure no duplicates
       const insertedColumns: Column[] = [];
       for (const col of columns) {
         const result = await db.query<Column>(
@@ -122,7 +144,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       
       await db.query('COMMIT');
       
-      // Update the state with the new columns
       set({ columns: insertedColumns });
     } catch (error) {
       await db.query('ROLLBACK');
@@ -136,7 +157,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     );
     const columns = get().columns;
     if (columns.length > 0) {
-      await get().fetchColumns(columns[0].project_id);
+      const project_id = columns.find(c => c.id === columnId)?.project_id;
+      if (project_id) {
+        await get().fetchColumns(project_id);
+      }
     }
   },
 }));
