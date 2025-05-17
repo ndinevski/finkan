@@ -4,6 +4,7 @@ import { Workspace, WorkspaceMember, Profile, Project } from '../db/types';
 import { auth } from '../auth/client';
 import { api } from '../api/client';
 import { API_BASE_URL } from "../config";
+import { useTaskStore } from './task-store';
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -96,16 +97,33 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       [workspaceId]
     );
     set({ projects: result.rows });
-  },
-  createProject: async (workspaceId: string, name: string, description?: string) => {
+  },  createProject: async (workspaceId: string, name: string, description?: string) => {
     const { data: { user } } = await auth.getSession();
     if (!user) throw new Error('Not authenticated');
 
-    await db.query(
-      'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4)',
-      [workspaceId, name, description, user.id]
-    );
-    await get().fetchProjects(workspaceId);
+    await db.query('BEGIN');
+
+    try {
+      // Create project
+      const projectResult = await db.query<Project>(
+        'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
+        [workspaceId, name, description, user.id]
+      );
+      const project = projectResult.rows[0];
+
+      const taskStore = useTaskStore.getState();
+      await taskStore.createDefaultColumns(project.id, [
+        { name: 'To Do', position: 0 },
+        { name: 'In Progress', position: 1 },
+        { name: 'Done', position: 2 },
+      ]);
+
+      await db.query('COMMIT');
+      await get().fetchProjects(workspaceId);
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
   },
   deleteWorkspace: async (id) => {
     try {

@@ -61,6 +61,7 @@ CREATE TABLE tasks (
   column_id UUID REFERENCES columns(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
+  assignee_id UUID REFERENCES profiles(id),
   priority VARCHAR(50) DEFAULT 'medium',
   status VARCHAR(50) DEFAULT 'todo',
   due_date TIMESTAMP WITH TIME ZONE,

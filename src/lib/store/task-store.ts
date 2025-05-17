@@ -14,16 +14,20 @@ interface TaskState {
     title: string,
     description?: string,
     priority?: Task['priority'],
-    dueDate?: string
+    dueDate?: string,
+    assignee_id?: string | null,
+    is_recurring?: boolean,
+    recurrence_pattern?: string | null
   ) => Promise<void>;
   updateTaskStatus: (taskId: string, columnId: string, position: number) => Promise<void>;
   updateTaskDetails: (
     taskId: string,
-    updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date'>>
+    updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date' | 'assignee_id' | 'is_recurring' | 'recurrence_pattern'>>
   ) => Promise<void>;
   createColumn: (boardId: string, name: string, position: number) => Promise<void>;
   createDefaultColumns: (boardId: string, columns: { name: string; position: number }[]) => Promise<void>;
   updateColumnPosition: (columnId: string, position: number) => Promise<void>;
+  deleteColumn: (columnId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -48,22 +52,48 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await get().fetchTasks(result.rows.map((col) => col.id));
     }
     return result;
-  },
-  createTask: async (columnId, title, description, priority = 'medium', dueDate) => {
-    const { data: { user } } = await auth.getSession();
-    if (!user) throw new Error('Not authenticated');
+  },  createTask: async (
+    columnId,
+    title,
+    description,
+    priority = 'medium',
+    dueDate,
+    assignee_id = null,
+    is_recurring = false,
+    recurrence_pattern = null
+  ) => {
+    try {
+      const session = await auth.getSession();
+      if (!session?.data?.user) throw new Error('Not authenticated');
+      const user = session.data.user;
 
-    const lastTaskResult = await db.query<Task>(
-      'SELECT position FROM tasks WHERE column_id = $1 ORDER BY position DESC LIMIT 1',
-      [columnId]
-    );
-    const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
+      const lastTaskResult = await db.query<Task>(
+        'SELECT position FROM tasks WHERE column_id = $1 ORDER BY position DESC LIMIT 1',
+        [columnId]
+      );
+      const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
 
-    await db.query(
-      'INSERT INTO tasks (column_id, title, description, priority, due_date, position, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [columnId, title, description, priority, dueDate, position, user.id]
-    );
-    await get().fetchTasks([columnId]);
+      // Set defaults for null values
+      const status = 'todo'; // Default status
+      
+      const queryText = `
+        INSERT INTO tasks (
+          column_id, title, description, priority, status, due_date, position, created_by,
+          assignee_id, is_recurring, recurrence_pattern
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `;
+      const queryParams = [
+        columnId, title, description, priority, status, dueDate, position, user.id,
+        assignee_id, is_recurring, recurrence_pattern
+      ];
+
+      console.log('Creating task with params:', JSON.stringify(queryParams, null, 2));
+      await db.query(queryText, queryParams);
+      await get().fetchTasks([columnId]);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
   },
   updateTaskStatus: async (taskId, columnId, position) => {
     await db.query(
@@ -72,18 +102,36 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     );
     const columns = get().columns;
     await get().fetchTasks(columns.map((col) => col.id));
-  },
-  updateTaskDetails: async (taskId, updates) => {
-    const setClause = Object.entries(updates)
-      .map(([key, _], index) => `${key} = $${index + 2}`)
-      .join(', ');
-    await db.query(
-      `UPDATE tasks SET ${setClause} WHERE id = $1`,
-      [taskId, ...Object.values(updates)]
-    );
-    const task = get().tasks.find((t) => t.id === taskId);
-    if (task) {
-      await get().fetchTasks([task.column_id]);
+  },  updateTaskDetails: async (taskId, updates) => {
+    try {
+      // Filter out undefined values
+      const validUpdates = Object.entries(updates).filter(([, value]) => value !== undefined);
+      if (validUpdates.length === 0) return;
+
+      const setClause = validUpdates
+        .map(([key], index) => `${key} = $${index + 2}`)
+        .join(', ');
+      const queryParams = [taskId, ...validUpdates.map(([, value]) => value)];
+
+      console.log('Updating task with params:', JSON.stringify({
+        taskId,
+        setClause, 
+        values: validUpdates.map(([key, val]) => ({ [key]: val }))
+      }, null, 2));
+
+      await db.query(
+        `UPDATE tasks SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        queryParams
+      );
+      
+      // Refresh tasks in this column
+      const task = get().tasks.find((t) => t.id === taskId);
+      if (task) {
+        await get().fetchTasks([task.column_id]);
+      }
+    } catch (error) {
+      console.error('Error updating task details:', error);
+      throw error;
     }
   },
   createColumn: async (boardId, name, position) => {
@@ -96,21 +144,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }));
   },
   createDefaultColumns: async (boardId, columns) => {
-    // First, check if columns already exist
     const existingColumns = await db.query<Column>(
       'SELECT * FROM columns WHERE project_id = $1',
       [boardId]
     );
 
     if (existingColumns.rows.length > 0) {
-      return; // Don't create columns if they already exist
+      return;
     }
 
-    // Use a transaction to ensure atomicity
     await db.query('BEGIN');
 
     try {
-      // Insert columns one by one to ensure no duplicates
       const insertedColumns: Column[] = [];
       for (const col of columns) {
         const result = await db.query<Column>(
@@ -122,7 +167,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       
       await db.query('COMMIT');
       
-      // Update the state with the new columns
       set({ columns: insertedColumns });
     } catch (error) {
       await db.query('ROLLBACK');
@@ -136,7 +180,54 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     );
     const columns = get().columns;
     if (columns.length > 0) {
-      await get().fetchColumns(columns[0].project_id);
+      const project_id = columns.find(c => c.id === columnId)?.project_id;
+      if (project_id) {
+        await get().fetchColumns(project_id);
+      }
+    }
+  },
+  deleteColumn: async (columnId) => {
+    try {
+      // First, get the project ID to refetch columns later
+      const columns = get().columns;
+      const columnToDelete = columns.find(c => c.id === columnId);
+      if (!columnToDelete) return;
+      
+      const project_id = columnToDelete.project_id;
+      
+      // Start a transaction to ensure data consistency
+      await db.query('BEGIN');
+      
+      // Delete all tasks in this column first
+      await db.query('DELETE FROM tasks WHERE column_id = $1', [columnId]);
+      
+      // Delete the column itself
+      await db.query('DELETE FROM columns WHERE id = $1', [columnId]);
+      
+      // Update positions of other columns
+      const remainingColumns = columns
+        .filter(c => c.id !== columnId)
+        .sort((a, b) => a.position - b.position);
+      
+      for (let i = 0; i < remainingColumns.length; i++) {
+        await db.query(
+          'UPDATE columns SET position = $1 WHERE id = $2',
+          [i, remainingColumns[i].id]
+        );
+      }
+      
+      // Commit the transaction
+      await db.query('COMMIT');
+      
+      // Refetch columns to update the state
+      if (project_id) {
+        await get().fetchColumns(project_id);
+      }
+    } catch (error) {
+      // Rollback transaction on error
+      await db.query('ROLLBACK');
+      console.error('Error deleting column:', error);
+      throw error;
     }
   },
 }));

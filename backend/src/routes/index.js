@@ -252,4 +252,79 @@ router.get('/workspaces', async (req, res) => {
   }
 });
 
+// Create Task
+router.post('/tasks', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const {
+      column_id,
+      title,
+      description,
+      assignee_id,
+      priority,
+      status,
+      due_date,
+      is_recurring,
+      recurrence_pattern
+    } = req.body;
+    const created_by = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+
+    console.log('Creating task with data:', req.body, 'by user:', created_by);
+
+    // Validate required fields
+    if (!column_id || !title) {
+      return res.status(400).json({ error: 'Missing required fields: column_id and title' });
+    }
+
+    await client.query('BEGIN');
+
+    // Get the highest current position in the column
+    const positionResult = await client.query(
+      'SELECT MAX(position) as max_position FROM tasks WHERE column_id = $1',
+      [column_id]
+    );
+    const nextPosition = positionResult.rows[0].max_position !== null ? 
+                        parseInt(positionResult.rows[0].max_position) + 1 : 0;
+    console.log('Next position calculated:', nextPosition);
+
+    // Insert the new task
+    const insertQuery = `
+      INSERT INTO tasks (
+        column_id, title, description, assignee_id, priority, status, 
+        due_date, is_recurring, recurrence_pattern, position, created_by
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *
+    `;
+    const values = [
+      column_id,
+      title,
+      description || null,
+      assignee_id || null,
+      priority || 'medium',
+      status || 'todo',
+      due_date || null,
+      is_recurring === true,
+      recurrence_pattern || null,
+      nextPosition,
+      created_by
+    ];
+
+    console.log('Executing insert query with values:', values);
+    const taskResult = await client.query(insertQuery, values);
+    const newTask = taskResult.rows[0];
+
+    await client.query('COMMIT');
+    console.log('Task created successfully:', newTask);
+    res.status(201).json(newTask);
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("Error creating task:", error);
+    res.status(500).json({ error: "Failed to create task", details: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 export default router; 

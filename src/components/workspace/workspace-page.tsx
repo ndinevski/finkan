@@ -45,16 +45,20 @@ function InviteMemberDialog({
     await onSubmit(email);
     setEmail("");
   };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <DialogTitle>Invite Team Member</DialogTitle>
+          <DialogTitle className="text-text-light dark:text-text-dark">
+            Invite Team Member
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-text-light dark:text-text-dark"
+            >
               Email Address
             </label>
             <Input
@@ -64,6 +68,7 @@ function InviteMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter email address"
               required
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-text-light dark:text-text-dark"
             />
           </div>
           <DialogFooter>
@@ -72,10 +77,15 @@ function InviteMemberDialog({
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
+              className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !email.trim()}>
+            <Button
+              type="submit"
+              disabled={isLoading || !email.trim()}
+              className="bg-primary hover:bg-primary-dark dark:bg-primary-light dark:hover:bg-primary text-white"
+            >
               {isLoading ? "Inviting..." : "Send Invitation"}
             </Button>
           </DialogFooter>
