@@ -283,7 +283,8 @@ router.post('/tasks', async (req, res) => {
       'SELECT MAX(position) as max_position FROM tasks WHERE column_id = $1',
       [column_id]
     );
-    const nextPosition = (positionResult.rows[0].max_position || 0) + 1;
+    const nextPosition = positionResult.rows[0].max_position !== null ? 
+                        parseInt(positionResult.rows[0].max_position) + 1 : 0;
     console.log('Next position calculated:', nextPosition);
 
     // Insert the new task
@@ -298,13 +299,13 @@ router.post('/tasks', async (req, res) => {
     const values = [
       column_id,
       title,
-      description,
-      assignee_id, // Can be null
+      description || null,
+      assignee_id || null,
       priority || 'medium',
       status || 'todo',
-      due_date, // Can be null
-      is_recurring || false,
-      recurrence_pattern, // Can be null
+      due_date || null,
+      is_recurring === true,
+      recurrence_pattern || null,
       nextPosition,
       created_by
     ];

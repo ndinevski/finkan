@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     recurrence_pattern TEXT,
     position INTEGER NOT NULL,
     created_by UUID REFERENCES profiles(id),
+    assignee_id UUID REFERENCES profiles(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -81,4 +82,4 @@ VALUES (
     '00000000-0000-0000-0000-000000000001',
     'test@example.com',
     'Test User'
-) ON CONFLICT (id) DO NOTHING; 
+) ON CONFLICT (id) DO NOTHING;

@@ -51,8 +51,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await get().fetchTasks(result.rows.map((col) => col.id));
     }
     return result;
-  },
-  createTask: async (
+  },  createTask: async (
     columnId,
     title,
     description,
@@ -62,28 +61,38 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     is_recurring = false,
     recurrence_pattern = null
   ) => {
-    const { data: { user } } = await auth.getSession();
-    if (!user) throw new Error('Not authenticated');
+    try {
+      const session = await auth.getSession();
+      if (!session?.data?.user) throw new Error('Not authenticated');
+      const user = session.data.user;
 
-    const lastTaskResult = await db.query<Task>(
-      'SELECT position FROM tasks WHERE column_id = $1 ORDER BY position DESC LIMIT 1',
-      [columnId]
-    );
-    const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
+      const lastTaskResult = await db.query<Task>(
+        'SELECT position FROM tasks WHERE column_id = $1 ORDER BY position DESC LIMIT 1',
+        [columnId]
+      );
+      const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
 
-    const queryText = `
-      INSERT INTO tasks (
-        column_id, title, description, priority, due_date, position, created_by,
+      // Set defaults for null values
+      const status = 'todo'; // Default status
+      
+      const queryText = `
+        INSERT INTO tasks (
+          column_id, title, description, priority, status, due_date, position, created_by,
+          assignee_id, is_recurring, recurrence_pattern
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `;
+      const queryParams = [
+        columnId, title, description, priority, status, dueDate, position, user.id,
         assignee_id, is_recurring, recurrence_pattern
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `;
-    const queryParams = [
-      columnId, title, description, priority, dueDate, position, user.id,
-      assignee_id, is_recurring, recurrence_pattern
-    ];
+      ];
 
-    await db.query(queryText, queryParams);
-    await get().fetchTasks([columnId]);
+      console.log('Creating task with params:', JSON.stringify(queryParams, null, 2));
+      await db.query(queryText, queryParams);
+      await get().fetchTasks([columnId]);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
   },
   updateTaskStatus: async (taskId, columnId, position) => {
     await db.query(
@@ -92,23 +101,36 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     );
     const columns = get().columns;
     await get().fetchTasks(columns.map((col) => col.id));
-  },
-  updateTaskDetails: async (taskId, updates) => {
-    const validUpdates = Object.entries(updates).filter(([, value]) => value !== undefined);
-    if (validUpdates.length === 0) return;
+  },  updateTaskDetails: async (taskId, updates) => {
+    try {
+      // Filter out undefined values
+      const validUpdates = Object.entries(updates).filter(([, value]) => value !== undefined);
+      if (validUpdates.length === 0) return;
 
-    const setClause = validUpdates
-      .map(([key], index) => `${key} = $${index + 2}`)
-      .join(', ');
-    const queryParams = [taskId, ...validUpdates.map(([, value]) => value)];
+      const setClause = validUpdates
+        .map(([key], index) => `${key} = $${index + 2}`)
+        .join(', ');
+      const queryParams = [taskId, ...validUpdates.map(([, value]) => value)];
 
-    await db.query(
-      `UPDATE tasks SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      queryParams
-    );
-    const task = get().tasks.find((t) => t.id === taskId);
-    if (task) {
-      await get().fetchTasks([task.column_id]);
+      console.log('Updating task with params:', JSON.stringify({
+        taskId,
+        setClause, 
+        values: validUpdates.map(([key, val]) => ({ [key]: val }))
+      }, null, 2));
+
+      await db.query(
+        `UPDATE tasks SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        queryParams
+      );
+      
+      // Refresh tasks in this column
+      const task = get().tasks.find((t) => t.id === taskId);
+      if (task) {
+        await get().fetchTasks([task.column_id]);
+      }
+    } catch (error) {
+      console.error('Error updating task details:', error);
+      throw error;
     }
   },
   createColumn: async (boardId, name, position) => {

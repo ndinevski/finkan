@@ -138,20 +138,32 @@ export function CreateTaskDialog({
       recurrence_pattern: "",
     });
   }, [user, form.reset]);
-
   const onSubmit = async (data: TaskFormData) => {
     setIsSubmitting(true);
-    console.log("Submitting full task data via store:", data);
+    console.log(
+      "Submitting full task data via store:",
+      JSON.stringify(data, null, 2)
+    );
     try {
+      // Pre-process data to ensure correct types
+      const description = data.description?.trim() || undefined;
+      const priority = data.priority || "medium";
+      const dueDate = data.due_date ? data.due_date.toISOString() : undefined;
+      const assignee_id = data.assignee_id || null;
+      const is_recurring = Boolean(data.is_recurring);
+      const recurrence_pattern = data.is_recurring
+        ? data.recurrence_pattern || null
+        : null;
+
       await createTask(
         columnId,
-        data.title,
-        data.description || undefined,
-        data.priority,
-        data.due_date ? data.due_date.toISOString() : undefined,
-        data.assignee_id || null,
-        data.is_recurring,
-        data.recurrence_pattern || null
+        data.title.trim(),
+        description,
+        priority,
+        dueDate,
+        assignee_id,
+        is_recurring,
+        recurrence_pattern
       );
 
       toast({ title: "Task created successfully!" });

@@ -20,11 +20,16 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
 export const db = {
   query: async <T>(text: string, params?: any[]): Promise<{ rows: T[] }> => {
-    const response = await fetchApi('/api/query', {
-      method: 'POST',
-      body: JSON.stringify({ query: text, params }),
-    });
-    return response;
+    try {
+      const response = await fetchApi('/api/query', {
+        method: 'POST',
+        body: JSON.stringify({ query: text, params }),
+      });
+      return response;
+    } catch (error) {
+      console.error(`DB query error: ${text}`, error);
+      throw error;
+    }
   },
 
   // Helper functions for common operations
