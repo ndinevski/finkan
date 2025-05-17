@@ -13,6 +13,12 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { CreateTaskDialog } from "@/components/task/CreateTaskDialog";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
@@ -111,11 +117,15 @@ export function ProjectBoard() {
     fetchColumns,
     updateTaskStatus,
     createColumn,
+    deleteColumn,
   } = useTaskStore();
   const { currentProject, fetchProject, archiveProject } = useProjectStore();
   const [showNewColumn, setShowNewColumn] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteColumnDialog, setShowDeleteColumnDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingColumn, setIsDeletingColumn] = useState(false);
+  const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
   const [newColumnName, setNewColumnName] = useState("");
   const [isCreatingColumn, setIsCreatingColumn] = useState(false);
   const { toast } = useToast();
@@ -156,7 +166,6 @@ export function ProjectBoard() {
       setIsCreatingColumn(false);
     }
   };
-
   const handleDeleteProject = async () => {
     if (!boardId) return;
     try {
@@ -177,6 +186,29 @@ export function ProjectBoard() {
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
+    }
+  };
+
+  const handleDeleteColumn = async () => {
+    if (!columnToDelete) return;
+    try {
+      setIsDeletingColumn(true);
+      await deleteColumn(columnToDelete);
+      setColumnToDelete(null);
+      toast({
+        title: "Success",
+        description: "Column deleted successfully",
+      });
+    } catch (error) {
+      console.error("Failed to delete column:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete column",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingColumn(false);
+      setShowDeleteColumnDialog(false);
     }
   };
   const handleDrop = async (taskId: string, targetColumnId: string) => {
@@ -239,7 +271,6 @@ export function ProjectBoard() {
             </Button>
           </div>
         </div>
-
         <div className="h-full overflow-x-auto">
           <div className="flex gap-4 min-h-[calc(100vh-12rem)]">
             {columns.map((column) => (
@@ -252,9 +283,25 @@ export function ProjectBoard() {
                   <h3 className="font-medium text-text-light dark:text-text-dark">
                     {column.name}
                   </h3>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setColumnToDelete(column.id);
+                          setShowDeleteColumnDialog(true);
+                        }}
+                        className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Column
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="space-y-2 flex-grow overflow-y-auto mb-4">
@@ -285,12 +332,16 @@ export function ProjectBoard() {
               </DroppableColumn>
             ))}
           </div>
-        </div>
-
+        </div>{" "}
         <Dialog open={showNewColumn} onOpenChange={setShowNewColumn}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle>Create New Column</DialogTitle>
+              <DialogTitle className="text-text-light dark:text-text-dark">
+                Create New Column
+              </DialogTitle>
+              <DialogDescription className="text-gray-500 dark:text-gray-400">
+                Enter a name for your new column.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -329,12 +380,13 @@ export function ProjectBoard() {
               </DialogFooter>
             </div>
           </DialogContent>
-        </Dialog>
-
+        </Dialog>{" "}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
             <DialogHeader>
-              <DialogTitle>Delete Project</DialogTitle>
+              <DialogTitle className="text-text-light dark:text-text-dark">
+                Delete Project
+              </DialogTitle>
               <DialogDescription className="text-gray-500 dark:text-gray-400">
                 Are you sure you want to delete this project? This action cannot
                 be undone.
@@ -357,6 +409,44 @@ export function ProjectBoard() {
                 className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
               >
                 {isDeleting ? "Deleting..." : "Delete Project"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>{" "}
+        <Dialog
+          open={showDeleteColumnDialog}
+          onOpenChange={setShowDeleteColumnDialog}
+        >
+          <DialogContent className="sm:max-w-[425px] bg-surface-light dark:bg-surface-dark border-gray-200 dark:border-gray-700">
+            <DialogHeader>
+              <DialogTitle className="text-text-light dark:text-text-dark">
+                Delete Column
+              </DialogTitle>
+              <DialogDescription className="text-gray-500 dark:text-gray-400">
+                Are you sure you want to delete this column? All tasks in this
+                column will also be deleted. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setColumnToDelete(null);
+                  setShowDeleteColumnDialog(false);
+                }}
+                disabled={isDeletingColumn}
+                className="border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-text-light dark:text-text-dark"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteColumn}
+                disabled={isDeletingColumn}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+              >
+                {isDeletingColumn ? "Deleting..." : "Delete Column"}
               </Button>
             </DialogFooter>
           </DialogContent>

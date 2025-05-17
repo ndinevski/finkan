@@ -27,6 +27,7 @@ interface TaskState {
   createColumn: (boardId: string, name: string, position: number) => Promise<void>;
   createDefaultColumns: (boardId: string, columns: { name: string; position: number }[]) => Promise<void>;
   updateColumnPosition: (columnId: string, position: number) => Promise<void>;
+  deleteColumn: (columnId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -183,6 +184,50 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       if (project_id) {
         await get().fetchColumns(project_id);
       }
+    }
+  },
+  deleteColumn: async (columnId) => {
+    try {
+      // First, get the project ID to refetch columns later
+      const columns = get().columns;
+      const columnToDelete = columns.find(c => c.id === columnId);
+      if (!columnToDelete) return;
+      
+      const project_id = columnToDelete.project_id;
+      
+      // Start a transaction to ensure data consistency
+      await db.query('BEGIN');
+      
+      // Delete all tasks in this column first
+      await db.query('DELETE FROM tasks WHERE column_id = $1', [columnId]);
+      
+      // Delete the column itself
+      await db.query('DELETE FROM columns WHERE id = $1', [columnId]);
+      
+      // Update positions of other columns
+      const remainingColumns = columns
+        .filter(c => c.id !== columnId)
+        .sort((a, b) => a.position - b.position);
+      
+      for (let i = 0; i < remainingColumns.length; i++) {
+        await db.query(
+          'UPDATE columns SET position = $1 WHERE id = $2',
+          [i, remainingColumns[i].id]
+        );
+      }
+      
+      // Commit the transaction
+      await db.query('COMMIT');
+      
+      // Refetch columns to update the state
+      if (project_id) {
+        await get().fetchColumns(project_id);
+      }
+    } catch (error) {
+      // Rollback transaction on error
+      await db.query('ROLLBACK');
+      console.error('Error deleting column:', error);
+      throw error;
     }
   },
 }));
