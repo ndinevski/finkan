@@ -26,7 +26,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   projectsLoadedWorkspaces: [],
   
   fetchProjects: async (workspaceId: string) => {
-    // Check if we've already loaded projects for this workspace
+
     const { projectsLoadedWorkspaces } = get();
     
     set({ isLoading: true });
@@ -36,17 +36,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         [workspaceId]
       );      
       
-      // Update projects and projectsByWorkspace
+
       const workspaceProjects = result.rows;
       
       set(state => {
-        // Create an updated projectsByWorkspace with the new projects for this workspace
+
         const updatedProjectsByWorkspace = {
           ...state.projectsByWorkspace,
           [workspaceId]: workspaceProjects
         };
         
-        // Update the projects array by removing old projects for this workspace and adding new ones
+
         const updatedProjects = [
           ...state.projects.filter(p => p.workspace_id !== workspaceId), 
           ...workspaceProjects
@@ -94,18 +94,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const { data: { user } } = await auth.getSession();
     if (!user) throw new Error('Not authenticated');
 
-    // Start a transaction
+
     await db.query('BEGIN');
 
     try {
-      // Create project
+
       const projectResult = await db.query<Project>(
         'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
         [workspaceId, name, description, user.id]
       );
       const project = projectResult.rows[0];
 
-      // Create default columns using TaskStore
+
       const taskStore = useTaskStore.getState();
       await taskStore.createDefaultColumns(project.id, [
         { name: 'To Do', position: 0 },
@@ -125,7 +125,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     archiveProject: async (projectId: string) => {
     const { projects, currentProject } = get();
     
-    // Find the project to archive to get its workspace_id
+
     const projectToArchive = projects.find(p => p.id === projectId);
     if (!projectToArchive) return;
     
@@ -140,7 +140,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({ currentProject: null });
     }
     
-    // Update both projects array and projectsByWorkspace
+
     set(state => ({
       projects: state.projects.filter(p => p.id !== projectId),
       projectsByWorkspace: {

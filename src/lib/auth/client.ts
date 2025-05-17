@@ -40,8 +40,8 @@ export const auth = {  async getSession() {
     }
   },  async signInWithMicrosoft() {
     try {
-      // Handle the Microsoft authentication flow
-      // Explicitly set the redirect URI in the request with exact string match
+
+
       const request = {
         ...loginRequest,
         redirectUri: "http://localhost:5173/auth-callback",
@@ -50,13 +50,13 @@ export const auth = {  async getSession() {
       
       console.log('Initiating Microsoft login with redirect URI:', request.redirectUri);
       
-      // Ensure MSAL is initialized before login
+
       if (!msalInstance.getAllAccounts().length) {
         console.log("No accounts found, proceeding with login redirect");
         await msalInstance.loginRedirect(request);
       } else {
         console.log("Account already exists, logging out first");
-        // If there's already an account, log out first to prevent multiple account issues
+
         const logoutRequest = {
           account: msalInstance.getAllAccounts()[0],
           postLogoutRedirectUri: "http://localhost:5173/auth"
@@ -64,9 +64,9 @@ export const auth = {  async getSession() {
         
         await msalInstance.logoutRedirect(logoutRequest);
       }
-      // The redirect will take the user to Microsoft's login page
-      // After successful login, the user will be redirected back to our app
-      // The auth provider will handle the token exchange with our backend
+
+
+
     } catch (error) {
       console.error('Microsoft sign in error:', error);
       throw error;
@@ -76,19 +76,19 @@ export const auth = {  async getSession() {
       console.log('Client: Starting Microsoft redirect handling');
       let tokenResponse;
       
-      // Check if we already have a redirect response available
+
       const response = await msalInstance.handleRedirectPromise();
       
       if (response) {
         console.log('Client: MSAL Redirect response received directly');
         tokenResponse = response;
       } else {
-        // If no direct response, try to get token from account
+
         const accounts = msalInstance.getAllAccounts();
         console.log('Client: Accounts found:', accounts.length);
         
         if (accounts.length > 0) {
-          // Use the first account to silently acquire token
+
           console.log('Client: Attempting silent token acquisition');
           try {
             tokenResponse = await msalInstance.acquireTokenSilent({
@@ -98,12 +98,12 @@ export const auth = {  async getSession() {
             console.log('Client: Silent token acquisition successful');
           } catch (silentError) {
             console.error('Client: Silent token acquisition failed, trying redirect', silentError);
-            // If silent acquisition fails, try with redirect again
+
             await msalInstance.acquireTokenRedirect({
               scopes: ['user.read'],
               redirectUri: "http://localhost:5173/auth-callback"
             });
-            // This will redirect the page, so this function won't return here
+
             return { data: null };
           }
         } else {
@@ -111,7 +111,7 @@ export const auth = {  async getSession() {
         }
       }
       
-      // Get ID token and access token
+
       const idToken = tokenResponse.idToken || '';
       const accessToken = tokenResponse.accessToken || '';
       
@@ -120,7 +120,7 @@ export const auth = {  async getSession() {
         throw new Error('Authentication failed: Missing tokens from Microsoft');
       }
         console.log('Client: Exchanging tokens with backend');
-      // After successful Microsoft login, exchange the token with our backend
+
       const exchangeResponse = await fetch(`${AUTH_BASE_URL}/auth/microsoft/token`, {
         method: 'POST',
         headers: {
@@ -170,13 +170,13 @@ export const auth = {  async getSession() {
     }
   },  async signOut() {
     try {
-      // Sign out from local session
+
       await fetch(`${AUTH_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
       
-      // Sign out from Microsoft
+
       if (msalInstance.getAllAccounts().length > 0) {
         msalInstance.logout();
       }

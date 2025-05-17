@@ -8,7 +8,6 @@ import cookieParser from 'cookie-parser';
 import router from './routes/index.js';
 import { configureMicrosoftStrategy } from './middleware/auth.js';
 
-// Load environment variables before creating the pool
 dotenv.config();
 
 const app = express();
@@ -31,7 +30,6 @@ console.log('Attempting to connect to PostgreSQL with config:', {
   database: process.env.DB_NAME
 });
 
-// Test database connection
 async function testConnection() {
   try {
     const client = await pool.connect();
@@ -51,7 +49,7 @@ async function testConnection() {
 
 testConnection();
 
-// Middleware
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
@@ -62,7 +60,7 @@ app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET || 'keyboard_cat'));
 app.use(express.urlencoded({ extended: true }));
 
-// Configure session (required for Passport)
+
 app.use(session({
   secret: process.env.COOKIE_SECRET || 'keyboard_cat',
   resave: false,
@@ -73,22 +71,22 @@ app.use(session({
   }
 }));
 
-// Initialize Passport and configure Microsoft strategy
+
 app.use(passport.initialize());
 app.use(passport.session());
 configureMicrosoftStrategy(pool);
 
-// Make pool available to routes
+
 app.use((req, res, next) => {
   req.db = pool;
   next();
 });
 
-// Auth routes - Mount them at root level (/auth/...)
+
 import authRouter from './routes/auth.js';
 app.use('/auth', authRouter);
 
-// API routes
+
 app.use('/api', router);
 
 app.listen(port, () => {

@@ -20,7 +20,6 @@ export function AuthDebugTools() {
   };
 
   const clearCache = () => {
-    // Clear localStorage entries related to MSAL
     Object.keys(localStorage).forEach((key) => {
       if (key.includes("msal")) {
         localStorage.removeItem(key);
@@ -28,7 +27,6 @@ export function AuthDebugTools() {
       }
     });
 
-    // Attempt to clear session storage as well
     Object.keys(sessionStorage).forEach((key) => {
       if (key.includes("msal")) {
         sessionStorage.removeItem(key);
@@ -41,16 +39,13 @@ export function AuthDebugTools() {
 
   const forceLogout = async () => {
     try {
-      // Call backend logout
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
 
-      // Clear browser state
       clearCache();
 
-      // Redirect to Microsoft logout
       window.location.href =
         "https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=" +
         encodeURIComponent(window.location.origin);
@@ -78,7 +73,6 @@ export function AuthDebugTools() {
     }
   };
 
-  // Only show in development mode
   if (import.meta.env.MODE !== "development") {
     return null;
   }

@@ -1,7 +1,7 @@
 import { Database } from './types';
 import { fetchWithAuth } from '../api/fetch-client';
 
-// Helper for database-specific API calls
+
 async function fetchApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   return fetchWithAuth<T>(endpoint, options);
 }
@@ -20,7 +20,7 @@ export const db = {
     }
   },
 
-  // Helper functions for common operations
+
   async getProfile(id: string) {
     const response = await fetchApi(`/profiles/${id}`);
     return response;

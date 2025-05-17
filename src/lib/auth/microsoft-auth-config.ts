@@ -1,7 +1,7 @@
 import { Configuration, PublicClientApplication, RedirectRequest, SilentRequest } from "@azure/msal-browser";
 import { MICROSOFT_CLIENT_ID } from "../config";
 
-// MSAL configuration for Single-Page Application
+
 const msalConfig: Configuration = {
   auth: {
     clientId: MICROSOFT_CLIENT_ID,
@@ -42,7 +42,7 @@ const msalConfig: Configuration = {
   }
 };
 
-// Authentication request configuration
+
 export const loginRequest: RedirectRequest = {
   scopes: ["user.read"],
   prompt: "select_account",
@@ -52,11 +52,11 @@ export const silentRequest: SilentRequest = {
   scopes: ["user.read"]
 };
 
-// Make sure token acquisition uses SPA-appropriate scopes
+
 export const tokenRequest = {
   scopes: ["User.Read", "openid", "profile", "email"],
-  // Add any other scopes your application needs
+
 };
 
-// Initialize MSAL
+
 export const msalInstance = new PublicClientApplication(msalConfig);

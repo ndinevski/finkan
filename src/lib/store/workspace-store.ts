@@ -41,15 +41,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         throw new Error("Failed to fetch workspaces");
       }
       
-      // Check if the data is an array and has items
+
       if (Array.isArray(data) && data.length > 0) {
         set({ workspaces: data });
         console.log("Workspaces set in store:", data);
         
-        // After loading workspaces, fetch projects for all of them
+
         const { fetchProjects } = get();
         for (const workspace of data) {
-          // We don't await here to allow parallel loading
+
           fetchProjects(workspace.id).catch(err => 
             console.error(`Error loading projects for workspace ${workspace.id}:`, err)
           );
@@ -88,7 +88,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const workspace = await api.createWorkspace(data);
       console.log("Created workspace:", workspace);
       
-      // Ensure the role is set to 'owner' for newly created workspaces
+
       if (!workspace.role) {
         workspace.role = 'owner';
       }
@@ -143,7 +143,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     await db.query('BEGIN');
 
     try {
-      // Create project
+
       const projectResult = await db.query<Project>(
         'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
         [workspaceId, name, description, user.id]

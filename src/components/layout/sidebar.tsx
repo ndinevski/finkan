@@ -101,13 +101,11 @@ export function Sidebar() {
   const [projectsByWorkspace, setProjectsByWorkspace] = useState<
     Record<string, boolean>
   >({});
-  // Use the store's helper function to get workspace projects
 
   useEffect(() => {
     fetchWorkspaces();
   }, [fetchWorkspaces]);
 
-  // Fetch projects for all workspaces initially
   useEffect(() => {
     const loadAllProjects = async () => {
       for (const workspace of workspaces) {
@@ -123,7 +121,6 @@ export function Sidebar() {
     }
   }, [workspaces, fetchProjects, projectsByWorkspace]);
 
-  // Still fetch projects when current workspace changes, for real-time updates
   useEffect(() => {
     if (currentWorkspace) {
       fetchProjects(currentWorkspace.id);
@@ -137,7 +134,7 @@ export function Sidebar() {
         next.delete(workspaceId);
       } else {
         next.add(workspaceId);
-        // Ensure projects for this workspace are loaded when expanded
+
         fetchProjects(workspaceId);
       }
       return next;

@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../config";
 
-// Function to get cookie by name
+
 function getCookie(name: string): string | undefined {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -8,7 +8,7 @@ function getCookie(name: string): string | undefined {
   return undefined;
 }
 
-// Global API fetch client that handles authentication
+
 export async function fetchWithAuth<T = any>(
   endpoint: string,
   options: RequestInit = {}
@@ -20,7 +20,7 @@ export async function fetchWithAuth<T = any>(
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
   };
-  // Check for token cookie - just for debugging
+
   const tokenCookie = getCookie('token');
   const hasTokenCookie = tokenCookie !== undefined;
   console.log(`API Request: ${url}`, { 
@@ -34,12 +34,12 @@ export async function fetchWithAuth<T = any>(
       ...defaultHeaders
     };
     
-    // Add Authorization header if we have a token
+
     if (hasTokenCookie) {
       headers['Authorization'] = `Bearer ${tokenCookie}`;
     }
     
-    // Add any custom headers from options
+
     if (options.headers) {
       Object.assign(headers, options.headers);
     }
@@ -50,14 +50,14 @@ export async function fetchWithAuth<T = any>(
       headers,
     });console.log(`API Response: ${response.status} ${response.statusText}`, { url });
     
-    // Handle common response status codes
+
     if (!response.ok) {
       if (response.status === 401) {
         console.warn('Authentication required - redirecting to login');
         
-        // For API calls, we'll redirect to the login page if not authenticated
+
         if (!window.location.pathname.includes('/auth')) {
-          // Store the current URL to redirect back after login
+
           sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
           console.log('Redirecting to auth page, saving return path:', window.location.pathname);
           window.location.href = '/auth';
@@ -66,7 +66,7 @@ export async function fetchWithAuth<T = any>(
         throw new Error('Authentication required');
       }
       
-      // Try to parse error response
+
       let errorData;
       try {
         errorData = await response.json();
@@ -82,7 +82,7 @@ export async function fetchWithAuth<T = any>(
       throw error;
     }
 
-    // Check if response is JSON
+
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return await response.json() as T;

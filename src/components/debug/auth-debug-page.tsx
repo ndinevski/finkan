@@ -1,4 +1,3 @@
-// See if auth state is working
 import { useState, useEffect } from "react";
 import { AUTH_BASE_URL } from "@/lib/config";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -14,7 +13,6 @@ export default function AuthDebugPage() {
 
   const { isAuthenticated, isLoading, checkAuth } = useAuth();
 
-  // Function to get cookie by name
   function getCookie(name: string): string | undefined {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);

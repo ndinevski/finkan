@@ -3,10 +3,10 @@ import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
-// Load environment variables
+
 dotenv.config();
 
-// Configure Microsoft authentication strategy
+
 const configureMicrosoftStrategy = (pool) => {
   passport.use(new MicrosoftStrategy({
     clientID: process.env.MICROSOFT_CLIENT_ID,
@@ -16,14 +16,14 @@ const configureMicrosoftStrategy = (pool) => {
     tenant: process.env.MICROSOFT_TENANT_ID || 'common',
   }, async (accessToken, refreshToken, profile, done) => {
     try {
-      // Get user from database or create new user
+
       const client = await pool.connect();
       
       try {
-        // Begin transaction
+
         await client.query('BEGIN');
         
-        // Check if user exists in the database by Microsoft ID
+
         const userResult = await client.query(
           'SELECT * FROM profiles WHERE microsoft_id = $1',
           [profile.id]
@@ -32,21 +32,21 @@ const configureMicrosoftStrategy = (pool) => {
         let user = userResult.rows[0];
         
         if (!user) {
-          // If user doesn't exist but email exists, update with Microsoft ID
+
           const emailResult = await client.query(
             'SELECT * FROM profiles WHERE email = $1',
             [profile.emails?.[0]?.value]
           );
           
           if (emailResult.rows[0]) {
-            // Update existing user with Microsoft ID
+
             user = emailResult.rows[0];
             await client.query(
               'UPDATE profiles SET microsoft_id = $1, auth_provider = $2, updated_at = NOW() WHERE id = $3',
               [profile.id, 'microsoft', user.id]
             );
           } else {
-            // Create new user
+
             const newUserResult = await client.query(
               'INSERT INTO profiles (email, full_name, avatar_url, microsoft_id, auth_provider) VALUES ($1, $2, $3, $4, $5) RETURNING *',
               [
@@ -61,16 +61,16 @@ const configureMicrosoftStrategy = (pool) => {
           }
         }
         
-        // Store tokens if needed
+
         if (refreshToken) {
-          // Delete any existing tokens for this user
+
           await client.query('DELETE FROM auth_sessions WHERE user_id = $1', [user.id]);
           
-          // Calculate expiration date (usually 1 hour for Microsoft tokens)
+
           const expiresAt = new Date();
           expiresAt.setHours(expiresAt.getHours() + 1);
           
-          // Store new tokens
+
           await client.query(
             'INSERT INTO auth_sessions (user_id, access_token, refresh_token, expires_at) VALUES ($1, $2, $3, $4)',
             [user.id, accessToken, refreshToken, expiresAt]
@@ -91,7 +91,7 @@ const configureMicrosoftStrategy = (pool) => {
     }
   }));
 
-  // User serialization for session
+
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
@@ -106,7 +106,7 @@ const configureMicrosoftStrategy = (pool) => {
   });
 };
 
-// Middleware to create and sign JWT token
+
 const createToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -115,7 +115,7 @@ const createToken = (user) => {
   );
 };
 
-// Middleware to verify JWT token
+
 const verifyToken = (req, res, next) => {
   try {
     console.log('verifyToken middleware called', { 
@@ -148,7 +148,7 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// Middleware to check if user is authenticated
+
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated() || req.user) {
     return next();

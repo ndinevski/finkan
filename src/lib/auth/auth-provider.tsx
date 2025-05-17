@@ -25,29 +25,23 @@ const AuthContext = createContext<AuthContextProps>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Component to handle MSAL events and initialization
 function MsalAuthenticationHandler({ children }: { children: ReactNode }) {
   const { instance } = useMsal();
   const { handleMicrosoftRedirect } = useAuthStore();
   const [isMsalInitialized, setIsMsalInitialized] = useState(false);
 
-  // Set up event listeners for MSAL
   useEffect(() => {
-    // First ensure MSAL is initialized
     const initializeMsal = async () => {
       try {
-        // Make sure MSAL is initialized before proceeding
         await msalInstance.initialize();
         setIsMsalInitialized(true);
         console.log("MSAL initialized successfully");
 
-        // Now handle any redirect response - explicitly using SPA redirect handling
         try {
-          // Ensure we're handling this as a SPA
           const response = await msalInstance.handleRedirectPromise();
           if (response) {
             console.log("MSAL redirect response received:", response);
-            // Process the response by exchanging the token with our backend
+
             await handleMicrosoftRedirect();
             console.log("Microsoft redirect processed successfully");
           }
@@ -64,7 +58,6 @@ function MsalAuthenticationHandler({ children }: { children: ReactNode }) {
 
     initializeMsal();
 
-    // Listen for MSAL events for logging and debugging
     const callbackId = instance.addEventCallback((event) => {
       if (
         event.eventType === EventType.LOGIN_SUCCESS ||
@@ -88,7 +81,6 @@ function MsalAuthenticationHandler({ children }: { children: ReactNode }) {
     };
   }, [instance, handleMicrosoftRedirect]);
 
-  // Don't render children until MSAL is initialized
   if (!isMsalInitialized) {
     return <div>Initializing authentication...</div>;
   }
@@ -103,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       console.log("Checking authentication status...");
-      // Check if user is authenticated through session
+
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         credentials: "include",
       });
@@ -113,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("User authenticated:", data.user);
         setUser(data.user);
 
-        // Check if we need to redirect after successful login
         const redirectPath = sessionStorage.getItem("redirectAfterLogin");
         if (redirectPath && window.location.pathname.includes("/auth")) {
           console.log(`Redirecting to ${redirectPath} after login`);
@@ -132,8 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
   useEffect(() => {
-    // Don't check auth immediately - let MsalAuthenticationHandler initialize MSAL first
-    // and handle any redirects before we check general auth status
     const timer = setTimeout(() => {
       console.log("Running delayed auth check");
       checkAuth();

@@ -10,13 +10,11 @@ export function AuthCallback() {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [searchParams] = useSearchParams();
   useEffect(() => {
-    // Log any error parameters from the URL
     const errorParam = searchParams.get("error");
     const errorDescParam = searchParams.get("error_description");
     const codeParam = searchParams.get("code");
     const stateParam = searchParams.get("state");
 
-    // Initialize debugging info
     setDebugInfo({
       searchParams: Object.fromEntries(searchParams.entries()),
       location: window.location.href,
@@ -37,17 +35,16 @@ export function AuthCallback() {
       try {
         console.log("Auth callback: Starting redirect handling");
 
-        // Let MSAL handle the redirect response first
         const msalResponse = await msalInstance.handleRedirectPromise();
 
         if (msalResponse) {
           console.log("MSAL redirect response received:", msalResponse);
-          // Now exchange the token with our backend
+
           await handleMicrosoftRedirect();
           console.log("Auth callback: Redirect handling complete");
         } else {
           console.log("No MSAL response, checking accounts...");
-          // Check if we have accounts already (might happen if the callback was handled elsewhere)
+
           const accounts = msalInstance.getAllAccounts();
 
           if (accounts.length > 0) {
@@ -116,6 +113,5 @@ export function AuthCallback() {
     );
   }
 
-  // Redirect to home page on successful authentication
   return <Navigate to="/" />;
 }

@@ -42,8 +42,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithMicrosoft: async () => {
     try {
       await auth.signInWithMicrosoft();
-      // Note: This won't immediately update the user state
-      // The user state will be updated after redirect via handleMicrosoftRedirect
+
+
     } catch (error) {
       console.error('Microsoft sign in failed:', error);
       throw error;

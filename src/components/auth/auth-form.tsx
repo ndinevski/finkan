@@ -13,7 +13,6 @@ export function AuthForm() {
   const { signIn, signUp, signInWithMicrosoft, handleMicrosoftRedirect } =
     useAuthStore();
 
-  // Handle Microsoft redirect when the component mounts
   useEffect(() => {
     handleMicrosoftRedirect().catch(console.error);
   }, [handleMicrosoftRedirect]);

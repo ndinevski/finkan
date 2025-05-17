@@ -34,7 +34,6 @@ function App() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Check system preference for dark mode
     const prefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)"
     ).matches;

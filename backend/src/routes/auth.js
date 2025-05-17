@@ -4,7 +4,7 @@ import { createToken, verifyToken } from '../middleware/auth.js';
 
 const authRouter = express.Router();
 
-// Microsoft OAuth login route
+
 authRouter.get('/microsoft',
   passport.authenticate('microsoft', { 
     prompt: 'select_account',
@@ -12,17 +12,17 @@ authRouter.get('/microsoft',
   })
 );
 
-// Microsoft OAuth callback route
+
 authRouter.get('/microsoft/callback',
   passport.authenticate('microsoft', { 
     failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth?error=Failed%20to%20authenticate` 
   }),
   (req, res) => {
     try {
-      // Create JWT token
+
       const token = createToken(req.user);
       
-      // Set HTTP-only cookie with token
+
       res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -30,7 +30,7 @@ authRouter.get('/microsoft/callback',
         sameSite: 'lax'
       });
       
-      // Redirect to client app
+
       res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/`);
     } catch (error) {
       console.error('Authentication callback error:', error);
@@ -39,7 +39,7 @@ authRouter.get('/microsoft/callback',
   }
 );
 
-// Get current user info
+
 authRouter.get('/me', verifyToken, (req, res) => {
   console.log('Auth/me endpoint reached with user:', req.user);
   
@@ -48,7 +48,7 @@ authRouter.get('/me', verifyToken, (req, res) => {
     return res.status(401).json({ message: 'Not authenticated' });
   }
   
-  // Log debug info
+
   console.log('User authenticated successfully:', {
     id: req.user.id,
     email: req.user.email,
@@ -58,7 +58,7 @@ authRouter.get('/me', verifyToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Exchange Microsoft token for our session token
+
 authRouter.post('/microsoft/token', async (req, res) => {
   try {
     const { idToken, accessToken } = req.body;
@@ -67,10 +67,10 @@ authRouter.post('/microsoft/token', async (req, res) => {
       return res.status(400).json({ message: 'Missing token information' });
     }
     
-    // Verify the tokens with Microsoft (in a production app)
-    // For now, we'll trust the tokens and create a user session
+
+
     
-    // Get user info from Microsoft Graph API using the access token
+
     const userInfoResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -84,30 +84,30 @@ authRouter.post('/microsoft/token', async (req, res) => {
     
     const userInfo = await userInfoResponse.json();
     
-    // Now find or create user in our database
+
     const client = await req.db.connect();
     let user;
     
     try {
       await client.query('BEGIN');
       
-      // Check if user exists by Microsoft ID (extracted from tokens)
-      // In practice, you would decode the ID token to get the user ID
-      // For now, we use the ID from the Graph API response
+
+
+
       const userResult = await client.query(
         'SELECT * FROM profiles WHERE microsoft_id = $1 OR email = $2',
         [userInfo.id, userInfo.userPrincipalName || userInfo.mail]
       );
       
       if (userResult.rowCount > 0) {
-        // Update existing user
+
         user = userResult.rows[0];
         await client.query(
           'UPDATE profiles SET microsoft_id = $1, auth_provider = $2, updated_at = NOW() WHERE id = $3',
           [userInfo.id, 'microsoft', user.id]
         );
       } else {
-        // Create new user
+
         const newUserResult = await client.query(
           'INSERT INTO profiles (email, full_name, avatar_url, microsoft_id, auth_provider) VALUES ($1, $2, $3, $4, $5) RETURNING *',
           [
@@ -123,10 +123,10 @@ authRouter.post('/microsoft/token', async (req, res) => {
       
       await client.query('COMMIT');
       
-      // Create JWT token
+
       const token = createToken(user);
       
-      // Set HTTP-only cookie with token
+
       res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -148,26 +148,26 @@ authRouter.post('/microsoft/token', async (req, res) => {
   }
 });
 
-// Logout route
+
 authRouter.get('/logout', (req, res) => {
-  // Clear the token cookie
+
   res.clearCookie('token');
   
-  // Logout from Passport session
+
   if (req.logout) {
     req.logout();
   }
   
-  // Redirect to login page
+
   res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth`);
 });
 
-// Also add POST method for frontend logout
+
 authRouter.post('/logout', (req, res) => {
-  // Clear the token cookie
+
   res.clearCookie('token');
   
-  // Logout from Passport session
+
   if (req.logout) {
     req.logout();
   }
