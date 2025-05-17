@@ -118,17 +118,27 @@ const createToken = (user) => {
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   try {
+    console.log('verifyToken middleware called', { 
+      cookies: req.cookies,
+      hasAuthHeader: !!req.headers.authorization,
+      url: req.originalUrl
+    });
+    
     const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
+      console.log('No token found in request');
       return res.status(401).json({ message: 'No token provided' });
     }
 
+    console.log('Token found, verifying with JWT');
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
+        console.error('JWT verification error:', err);
         return res.status(401).json({ message: 'Invalid token' });
       }
       
+      console.log('Token successfully verified for user:', decoded.id);
       req.user = decoded;
       next();
     });

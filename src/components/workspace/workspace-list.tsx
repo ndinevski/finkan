@@ -21,6 +21,8 @@ export function WorkspaceList() {
   );
   const { toast } = useToast();
 
+  console.log("Workspaces in state:", workspaces);
+
   const ownedWorkspaces = workspaces.filter(
     (workspace) => workspace.role === "owner"
   );
@@ -28,8 +30,20 @@ export function WorkspaceList() {
     (workspace) => workspace.role !== "owner"
   );
 
+  console.log("Owned workspaces:", ownedWorkspaces);
+  console.log("Shared workspaces:", sharedWorkspaces);
+
   useEffect(() => {
-    fetchWorkspaces().catch(console.error);
+    const loadWorkspaces = async () => {
+      try {
+        await fetchWorkspaces();
+        console.log("Workspaces fetched successfully");
+      } catch (error) {
+        console.error("Error fetching workspaces:", error);
+      }
+    };
+
+    loadWorkspaces();
   }, [fetchWorkspaces]);
 
   const handleCreateWorkspace = async (data: {
@@ -103,7 +117,7 @@ export function WorkspaceList() {
       <div className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold pb-4">Created By Me</h2>
-          {ownedWorkspaces.length > 0 ? (
+          {ownedWorkspaces && ownedWorkspaces.length > 0 ? (
             ownedWorkspaces.map((workspace) => (
               <div
                 key={workspace.id}
@@ -152,7 +166,7 @@ export function WorkspaceList() {
 
         <div>
           <h2 className="text-lg font-semibold pb-4">Shared with Me</h2>
-          {sharedWorkspaces.length > 0 ? (
+          {sharedWorkspaces && sharedWorkspaces.length > 0 ? (
             sharedWorkspaces.map((workspace) => (
               <div
                 key={workspace.id}

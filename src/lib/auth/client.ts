@@ -168,11 +168,10 @@ export const auth = {  async getSession() {
       console.error('Sign up error:', error);
       throw error;
     }
-  },
-  async signOut() {
+  },  async signOut() {
     try {
       // Sign out from local session
-      await fetch(`${API_BASE_URL}/auth/logout`, {
+      await fetch(`${AUTH_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

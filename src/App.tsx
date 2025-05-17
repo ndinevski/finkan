@@ -14,7 +14,7 @@ import { ProjectBoard } from "./components/project/project-board";
 import { Toaster } from "./components/ui/toaster";
 import { Header } from "./components/layout/header";
 import { Sidebar } from "./components/layout/sidebar";
-import { AuthDebugTools } from "./components/debug/auth-debug";
+import AuthDebugPage from "./components/debug/auth-debug-page";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -52,9 +52,11 @@ function App() {
     <div className="min-h-screen w-full bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
       <AuthProvider>
         <Router>
+          {" "}
           <Routes>
             <Route path="/auth" element={<AuthForm />} />
             <Route path="/auth-callback" element={<AuthCallback />} />
+            <Route path="/auth-debug" element={<AuthDebugPage />} />
             <Route
               path="/"
               element={

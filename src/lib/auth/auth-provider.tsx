@@ -112,6 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         console.log("User authenticated:", data.user);
         setUser(data.user);
+
+        // Check if we need to redirect after successful login
+        const redirectPath = sessionStorage.getItem("redirectAfterLogin");
+        if (redirectPath && window.location.pathname.includes("/auth")) {
+          console.log(`Redirecting to ${redirectPath} after login`);
+          sessionStorage.removeItem("redirectAfterLogin");
+          window.location.href = redirectPath;
+        }
       } else {
         console.log("User not authenticated");
         setUser(null);
@@ -123,13 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthChecked(true);
     }
   };
-
   useEffect(() => {
     // Don't check auth immediately - let MsalAuthenticationHandler initialize MSAL first
     // and handle any redirects before we check general auth status
     const timer = setTimeout(() => {
+      console.log("Running delayed auth check");
       checkAuth();
-    }, 500);
+    }, 1000); // Increased to 1000ms for better reliability
 
     return () => clearTimeout(timer);
   }, []);

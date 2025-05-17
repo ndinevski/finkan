@@ -41,9 +41,19 @@ authRouter.get('/microsoft/callback',
 
 // Get current user info
 authRouter.get('/me', verifyToken, (req, res) => {
+  console.log('Auth/me endpoint reached with user:', req.user);
+  
   if (!req.user) {
+    console.log('No user found in request');
     return res.status(401).json({ message: 'Not authenticated' });
   }
+  
+  // Log debug info
+  console.log('User authenticated successfully:', {
+    id: req.user.id,
+    email: req.user.email,
+    role: req.user.role
+  });
   
   res.json({ user: req.user });
 });

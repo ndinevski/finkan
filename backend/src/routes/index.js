@@ -1,6 +1,7 @@
 import express from 'express';
 import pg from 'pg';
 import authRouter from './auth.js';
+import { verifyToken, isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -46,9 +47,12 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle client:', err);
 });
 
-// Generic query endpoint
-router.post('/query', async (req, res) => {
+// Generic query endpoint - this should only be used by authenticated users
+router.post('/query', verifyToken, async (req, res) => {
   try {
+    // This endpoint is sensitive as it allows arbitrary queries
+    // In a production system, you might want to restrict what queries can be run
+    // or remove this endpoint entirely
     const { query, params } = req.body;
     const result = await pool.query(query, params);
     res.json({ rows: result.rows });
@@ -59,7 +63,7 @@ router.post('/query', async (req, res) => {
 });
 
 // Profiles
-router.get('/profiles/:id', async (req, res) => {
+router.get('/profiles/:id', verifyToken, async (req, res) => {
   try {
     console.log('Fetching profile with ID:', req.params.id);
     const result = await pool.query(
@@ -70,6 +74,21 @@ router.get('/profiles/:id', async (req, res) => {
       console.log('Profile not found');
       return res.status(404).json({ error: 'Profile not found' });
     }
+    
+    // For security, redact some sensitive profile fields if not the user's own profile
+    // unless the request is for the user's own profile
+    if (req.params.id !== req.user.id) {
+      // Only return limited info for other users' profiles
+      const publicProfile = {
+        id: result.rows[0].id,
+        full_name: result.rows[0].full_name,
+        avatar_url: result.rows[0].avatar_url,
+        // Don't include email, auth details, or other sensitive data
+      };
+      console.log('Returning public profile data');
+      return res.json(publicProfile);
+    }
+    
     console.log('Profile found:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (error) {
@@ -79,12 +98,27 @@ router.get('/profiles/:id', async (req, res) => {
 });
 
 // Workspaces
-router.get('/workspaces/:id', async (req, res) => {
+router.get('/workspaces/:id', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM workspaces WHERE id = $1',
       [req.params.id]
     );
+    
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+    
+    // Check if user has access to this workspace
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [req.params.id, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -92,8 +126,18 @@ router.get('/workspaces/:id', async (req, res) => {
 });
 
 // Workspace members
-router.get('/workspaces/:id/members', async (req, res) => {
+router.get('/workspaces/:id/members', verifyToken, async (req, res) => {
   try {
+    // First check if user is a member of this workspace
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [req.params.id, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     const result = await pool.query(
       'SELECT * FROM workspace_members WHERE workspace_id = $1',
       [req.params.id]
@@ -105,21 +149,61 @@ router.get('/workspaces/:id/members', async (req, res) => {
 });
 
 // Projects
-router.get('/projects/:id', async (req, res) => {
+router.get('/projects/:id', verifyToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM projects WHERE id = $1',
+    // First check if the project exists
+    const projectResult = await pool.query(
+      'SELECT p.*, w.id as workspace_id FROM projects p JOIN workspaces w ON p.workspace_id = w.id WHERE p.id = $1',
       [req.params.id]
     );
-    res.json(result.rows[0]);
+    
+    if (!projectResult.rows[0]) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    const workspaceId = projectResult.rows[0].workspace_id;
+    
+    // Check if user has access to the workspace that contains this project
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [workspaceId, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    res.json(projectResult.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Project columns
-router.get('/projects/:id/columns', async (req, res) => {
+router.get('/projects/:id/columns', verifyToken, async (req, res) => {
   try {
+    // First get the project's workspace
+    const projectResult = await pool.query(
+      'SELECT workspace_id FROM projects WHERE id = $1',
+      [req.params.id]
+    );
+    
+    if (!projectResult.rows[0]) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    const workspaceId = projectResult.rows[0].workspace_id;
+    
+    // Check if user has access to the workspace that contains this project
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [workspaceId, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     const result = await pool.query(
       'SELECT * FROM columns WHERE project_id = $1 ORDER BY position',
       [req.params.id]
@@ -131,21 +215,68 @@ router.get('/projects/:id/columns', async (req, res) => {
 });
 
 // Tasks
-router.get('/tasks/:id', async (req, res) => {
+router.get('/tasks/:id', verifyToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM tasks WHERE id = $1',
+    // First get the task's column and project information
+    const taskInfo = await pool.query(
+      `SELECT t.*, c.project_id, p.workspace_id 
+       FROM tasks t
+       JOIN columns c ON t.column_id = c.id
+       JOIN projects p ON c.project_id = p.id
+       WHERE t.id = $1`,
       [req.params.id]
     );
-    res.json(result.rows[0]);
+    
+    if (!taskInfo.rows[0]) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    const workspaceId = taskInfo.rows[0].workspace_id;
+    
+    // Check if user has access to the workspace that contains this task
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [workspaceId, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    res.json(taskInfo.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Column tasks
-router.get('/columns/:id/tasks', async (req, res) => {
+router.get('/columns/:id/tasks', verifyToken, async (req, res) => {
   try {
+    // First get the column's project and workspace information
+    const columnInfo = await pool.query(
+      `SELECT c.*, p.workspace_id 
+       FROM columns c
+       JOIN projects p ON c.project_id = p.id
+       WHERE c.id = $1`,
+      [req.params.id]
+    );
+    
+    if (!columnInfo.rows[0]) {
+      return res.status(404).json({ error: 'Column not found' });
+    }
+    
+    const workspaceId = columnInfo.rows[0].workspace_id;
+    
+    // Check if user has access to the workspace that contains this column
+    const memberCheck = await pool.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [workspaceId, req.user.id]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     const result = await pool.query(
       'SELECT * FROM tasks WHERE column_id = $1 ORDER BY position',
       [req.params.id]
@@ -157,10 +288,10 @@ router.get('/columns/:id/tasks', async (req, res) => {
 });
 
 // Delete workspace
-router.delete('/workspaces/:id', async (req, res) => {
+router.delete('/workspaces/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+    const userId = req.user.id; // Get user ID from authenticated token
 
     console.log('Attempting to delete workspace:', { workspaceId: id, userId });
 
@@ -189,24 +320,40 @@ router.delete('/workspaces/:id', async (req, res) => {
 });
 
 // Create workspace
-router.post('/workspaces', async (req, res) => {
+router.post('/workspaces', verifyToken, async (req, res) => {
   try {
     const { name, icon, description } = req.body;
-    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+    const userId = req.user.id; // Get user ID from authenticated token
+    const userEmail = req.user.email;
 
-    console.log('Creating workspace:', { name, icon, description, userId });
+    console.log('Creating workspace:', { name, icon, description, userId, userEmail });
 
     // Start a transaction
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
+      // Check if the user profile exists
+      const userProfileCheck = await client.query(
+        'SELECT * FROM profiles WHERE id = $1',
+        [userId]
+      );
+
+      // Create profile if it doesn't exist
+      if (userProfileCheck.rows.length === 0) {
+        console.log('User profile does not exist, creating it:', userId);
+        await client.query(
+          'INSERT INTO profiles (id, email, auth_provider) VALUES ($1, $2, $3)',
+          [userId, userEmail, 'microsoft']
+        );
+      }
+
       // Create workspace
       const workspaceResult = await client.query(
-        `INSERT INTO workspaces (name, icon, description)
-         VALUES ($1, $2, $3)
+        `INSERT INTO workspaces (name, icon, description, created_by)
+         VALUES ($1, $2, $3, $4)
          RETURNING *`,
-        [name, icon, description]
+        [name, icon, description, userId]
       );
       const workspace = workspaceResult.rows[0];
       console.log('Created workspace:', workspace);      // Add creator as owner
@@ -236,9 +383,9 @@ router.post('/workspaces', async (req, res) => {
 });
 
 // Get all workspaces for current user
-router.get('/workspaces', async (req, res) => {
+router.get('/workspaces', verifyToken, async (req, res) => {
   try {
-    const userId = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
+    const userId = req.user.id; // Get user ID from authenticated token
     const result = await pool.query(
       `SELECT w.*, wm.role 
        FROM workspaces w
@@ -254,7 +401,7 @@ router.get('/workspaces', async (req, res) => {
 });
 
 // Create Task
-router.post('/tasks', async (req, res) => {
+router.post('/tasks', verifyToken, async (req, res) => {
   const client = await pool.connect();
   try {
     const {
@@ -268,13 +415,35 @@ router.post('/tasks', async (req, res) => {
       is_recurring,
       recurrence_pattern
     } = req.body;
-    const created_by = "00000000-0000-0000-0000-000000000001"; // TODO: Get from auth
-
-    console.log('Creating task with data:', req.body, 'by user:', created_by);
+    const created_by = req.user.id; // Get user ID from authenticated token    console.log('Creating task with data:', req.body, 'by user:', created_by);
 
     // Validate required fields
     if (!column_id || !title) {
       return res.status(400).json({ error: 'Missing required fields: column_id and title' });
+    }
+    
+    // Check if the user has access to this column's workspace
+    const columnCheck = await client.query(
+      `SELECT c.*, p.workspace_id 
+       FROM columns c
+       JOIN projects p ON c.project_id = p.id
+       WHERE c.id = $1`,
+      [column_id]
+    );
+    
+    if (columnCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Column not found' });
+    }
+    
+    // Check if user is a member of the workspace
+    const workspaceId = columnCheck.rows[0].workspace_id;
+    const memberCheck = await client.query(
+      'SELECT * FROM workspace_members WHERE workspace_id = $1 AND profile_id = $2',
+      [workspaceId, created_by]
+    );
+    
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: 'Access denied to this column' });
     }
 
     await client.query('BEGIN');
