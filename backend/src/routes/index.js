@@ -1,5 +1,6 @@
 import express from 'express';
 import pg from 'pg';
+import authRouter from './auth.js';
 
 const router = express.Router();
 
@@ -327,4 +328,7 @@ router.post('/tasks', async (req, res) => {
   }
 });
 
-export default router; 
+// Mount auth router
+router.use('/auth', authRouter);
+
+export default router;
