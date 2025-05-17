@@ -403,7 +403,7 @@ export function WorkspacePage() {
                   )}
                   <div>
                     <h3 className="font-medium text-text-light dark:text-text-dark">
-                      {member.full_name || "Unnamed User"}
+                      {member.email.split("@")[0] || member.email || "User"}
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       {member.email}

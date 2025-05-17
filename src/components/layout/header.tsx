@@ -39,8 +39,8 @@ export function Header({
 
   return (
     <header className="fixed top-0 left-0 right-0 w-full bg-surface-light dark:bg-surface-dark shadow z-20 h-16">
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
+      <div className="w-full mx-auto px-3 py-4">
+        <div className="w-full flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {showBackButton && (
               <Button
@@ -54,9 +54,16 @@ export function Header({
               </Button>
             )}
             <Link to="/" className="flex items-center">
-              <h1 className="text-xl font-bold text-text-light dark:text-text-dark hover:opacity-80 transition-opacity">
-                FinKan
-              </h1>
+              <div className="flex justify-center items-center">
+                <img
+                  src="finkan.png"
+                  alt="FinKan Logo"
+                  className="h-10 w-auto"
+                />
+                <h1 className="text-center text-3xl mb-1 font-bold text-primary dark:text-primary-light">
+                  FinKan
+                </h1>
+              </div>
             </Link>
           </div>
           <div className="flex items-center space-x-2">
@@ -64,7 +71,7 @@ export function Header({
               variant="ghost"
               size="icon"
               onClick={onToggleDark}
-              className="text-text-light dark:text-text-dark"
+              className="text-primary dark:text-primary-light"
             >
               {isDark ? (
                 <Sun className="h-5 w-5" />
@@ -81,13 +88,13 @@ export function Header({
                     className="relative rounded-full bg-gray-200 dark:bg-gray-800 p-1"
                     aria-label="User menu"
                   >
-                    <User className="h-5 w-5 text-text-light dark:text-text-dark" />
+                    <User className="h-5 w-7 text-primary dark:text-primary-light" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-text-light dark:text-text-dark">
-                      {user.name || user.email || "User"}
+                      {user.email.split("@")[0] || user.email || "User"}
                     </p>
                     {user.email && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">

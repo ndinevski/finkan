@@ -48,6 +48,12 @@ export function AuthForm() {
     <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
       <div className="max-w-md w-full space-y-8 p-8 bg-surface-light dark:bg-surface-dark rounded-xl shadow-lg">
         <div>
+          <div className="mx-auto flex justify-center items-center">
+            <img src="finkan.png" alt="FinKan Logo" className="h-20 w-auto" />
+            <h1 className="text-center text-4xl font-bold text-primary dark:text-primary-light">
+              FinKan
+            </h1>
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-text-light dark:text-text-dark">
             {isSignUp ? "Create your account" : "Sign in to your account"}
           </h2>
