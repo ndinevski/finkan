@@ -37,5 +37,5 @@ This project was created with "Vibe Coding" - an experimental development approa
 ### Setup
 
 1. Clone the repository
-2. Run `docker-compose up` to start all services
+2. Run `docker-compose up -d` to start all services
 3. Access the application at http://localhost:5173
