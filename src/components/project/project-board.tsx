@@ -48,6 +48,21 @@ function DraggableTask({ task, columnId }: DraggableTaskProps) {
     }),
   });
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "low":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "high":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
+      case "urgent":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
+
   return (
     <div
       ref={dragRef}
@@ -55,19 +70,51 @@ function DraggableTask({ task, columnId }: DraggableTaskProps) {
         isDragging ? "opacity-50" : ""
       }`}
     >
-      <h4 className="font-medium text-text-light dark:text-text-dark">
-        {task.title}
-      </h4>
+      <div className="flex justify-between items-start mb-1">
+        <h4 className="font-medium text-text-light dark:text-text-dark">
+          {task.title}
+        </h4>
+        <span
+          className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPriorityColor(
+            task.priority
+          )}`}
+        >
+          {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+        </span>
+      </div>
       {task.description && (
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {task.description}
         </p>
       )}
-      {task.due_date && (
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Due: {new Date(task.due_date).toLocaleDateString()}
-        </p>
-      )}
+      <div className="mt-2 flex items-center justify-between">
+        <div>
+          {task.due_date && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Due: {new Date(task.due_date).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+        {task.is_recurring && (
+          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3 w-3 mr-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {task.recurrence_pattern || "Recurring"}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
