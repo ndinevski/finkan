@@ -20,6 +20,15 @@ FinKan helps users manage tasks and projects efficiently through an intuitive in
 
 ### Screenshots
 
+![finkan1](https://github.com/user-attachments/assets/1cdf44c0-f5cd-4937-bf2e-c74aefa4c425)
+![finkan2](https://github.com/user-attachments/assets/dd22c3c0-18fd-4ae7-b9cd-f13f3390fc3a)
+![finkan3](https://github.com/user-attachments/assets/bb01e6f7-08e0-4270-a5f6-6def653e5c82)
+![finkan4](https://github.com/user-attachments/assets/6c57d32a-1b3b-44ed-a7be-f2615bedbe22)
+![finkan6](https://github.com/user-attachments/assets/0875267f-4a00-4684-8c96-6727be3abe7b)
+![finkan5](https://github.com/user-attachments/assets/03d90461-65da-422b-8d32-c70f9e15bad9)
+![finkan7](https://github.com/user-attachments/assets/29226de8-8821-410d-b350-725819c74868)
+![finkan8](https://github.com/user-attachments/assets/cabc9249-7202-4153-b6df-b7afc7824d3a)
+
 ### Setup
 
 1. Clone the repository
