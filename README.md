@@ -18,6 +18,10 @@ FinKan helps users manage tasks and projects efficiently through an intuitive in
 - **Notifications**: Get alerted about task updates, deadlines, and assignments ( Not implemented yet )
 - **Real-time Updates**: See changes as they happen ( Not implemented yet )
 
+## Development
+
+This project was created with "Vibe Coding" - an experimental development approach I'm exploring that focuses on maintaining flow state and coding with an AI Agent.
+
 ### Screenshots
 
 ![finkan1](https://github.com/user-attachments/assets/1cdf44c0-f5cd-4937-bf2e-c74aefa4c425)
@@ -34,7 +38,3 @@ FinKan helps users manage tasks and projects efficiently through an intuitive in
 1. Clone the repository
 2. Run `docker-compose up` to start all services
 3. Access the application at http://localhost:5173
-
-## Development
-
-This project was created with "Vibe Coding" - an experimental development approach I'm exploring that focuses on maintaining flow state and coding with an AI Agent.
