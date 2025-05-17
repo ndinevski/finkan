@@ -15,12 +15,17 @@ import { Toaster } from "./components/ui/toaster";
 import { Header } from "./components/layout/header";
 import { Sidebar } from "./components/layout/sidebar";
 import AuthDebugPage from "./components/debug/auth-debug-page";
+import { Spinner } from "./components/ui/spinner";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

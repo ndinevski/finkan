@@ -10,6 +10,7 @@ import { MsalProvider, useMsal } from "@azure/msal-react";
 import { msalInstance } from "./microsoft-auth-config";
 import { API_BASE_URL } from "../config";
 import { EventType } from "@azure/msal-browser";
+import { Spinner } from "@/components/ui/spinner";
 
 interface AuthContextProps {
   isAuthenticated: boolean;
@@ -82,7 +83,11 @@ function MsalAuthenticationHandler({ children }: { children: ReactNode }) {
   }, [instance, handleMicrosoftRedirect]);
 
   if (!isMsalInitialized) {
-    return <div>Initializing authentication...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return <>{children}</>;
