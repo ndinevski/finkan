@@ -6,13 +6,13 @@ const msalConfig: Configuration = {
   auth: {
     clientId: MICROSOFT_CLIENT_ID,
     authority: "https://login.microsoftonline.com/common",
-    redirectUri: "http://localhost:5173/auth-callback", // Use exact string to match Azure configuration
-    navigateToLoginRequestUrl: false, // Set to false to avoid issues with redirect
-    postLogoutRedirectUri: "http://localhost:5173", // Explicitly set the client type to SPA (Single-Page Application)
+    redirectUri: "http://localhost:5173/auth-callback", 
+    navigateToLoginRequestUrl: false,
+    postLogoutRedirectUri: "http://localhost:5173",
   },
   cache: {
-    cacheLocation: "sessionStorage", // Using sessionStorage for better security
-    storeAuthStateInCookie: false    // Set to false for SPA applications
+    cacheLocation: "sessionStorage",
+    storeAuthStateInCookie: false   
   },
   system: {
     loggerOptions: {

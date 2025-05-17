@@ -29,7 +29,7 @@ export async function fetchWithAuth<T = any>(
     allCookies: document.cookie
   });
   
-  try {    // Ensure we're sending the token in both cookie and Authorization header
+  try {
     const headers: HeadersInit = {
       ...defaultHeaders
     };
@@ -46,7 +46,7 @@ export async function fetchWithAuth<T = any>(
     
     const response = await fetch(url, {
       ...options,
-      credentials: 'include', // Always send cookies for auth
+      credentials: 'include',
       headers,
     });console.log(`API Response: ${response.status} ${response.statusText}`, { url });
     

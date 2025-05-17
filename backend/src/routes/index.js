@@ -291,7 +291,7 @@ router.get('/columns/:id/tasks', verifyToken, async (req, res) => {
 router.delete('/workspaces/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id; // Get user ID from authenticated token
+    const userId = req.user.id; 
 
     console.log('Attempting to delete workspace:', { workspaceId: id, userId });
 
@@ -323,7 +323,7 @@ router.delete('/workspaces/:id', verifyToken, async (req, res) => {
 router.post('/workspaces', verifyToken, async (req, res) => {
   try {
     const { name, icon, description } = req.body;
-    const userId = req.user.id; // Get user ID from authenticated token
+    const userId = req.user.id;
     const userEmail = req.user.email;
 
     console.log('Creating workspace:', { name, icon, description, userId, userEmail });
@@ -356,7 +356,7 @@ router.post('/workspaces', verifyToken, async (req, res) => {
         [name, icon, description, userId]
       );
       const workspace = workspaceResult.rows[0];
-      console.log('Created workspace:', workspace);      // Add creator as owner
+      console.log('Created workspace:', workspace);
       const memberResult = await client.query(
         `INSERT INTO workspace_members (workspace_id, profile_id, role)
          VALUES ($1, $2, 'owner')
@@ -385,7 +385,7 @@ router.post('/workspaces', verifyToken, async (req, res) => {
 
 router.get('/workspaces', verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id; // Get user ID from authenticated token
+    const userId = req.user.id;
     const result = await pool.query(
       `SELECT w.*, wm.role 
        FROM workspaces w
@@ -415,7 +415,7 @@ router.post('/tasks', verifyToken, async (req, res) => {
       is_recurring,
       recurrence_pattern
     } = req.body;
-    const created_by = req.user.id; // Get user ID from authenticated token    console.log('Creating task with data:', req.body, 'by user:', created_by);
+    const created_by = req.user.id;
 
 
     if (!column_id || !title) {

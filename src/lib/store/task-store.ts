@@ -74,7 +74,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
 
 
-      const status = 'todo'; // Default status
+      const status = 'todo'; 
       
       const queryText = `
         INSERT INTO tasks (

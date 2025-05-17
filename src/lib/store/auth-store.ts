@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error('Store: Microsoft redirect handling failed:', error);
       set({ isLoading: false });
-      throw error; // Re-throw to allow caller to handle the error
+      throw error; 
     }
   },
   signOut: async () => {

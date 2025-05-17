@@ -45,7 +45,7 @@ export const auth = {  async getSession() {
       const request = {
         ...loginRequest,
         redirectUri: "http://localhost:5173/auth-callback",
-        prompt: "select_account" // Force account selection prompt
+        prompt: "select_account"
       };
       
       console.log('Initiating Microsoft login with redirect URI:', request.redirectUri);

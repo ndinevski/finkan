@@ -26,7 +26,7 @@ authRouter.get('/microsoft/callback',
       res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax'
       });
       
@@ -113,7 +113,7 @@ authRouter.post('/microsoft/token', async (req, res) => {
           [
             userInfo.userPrincipalName || userInfo.mail,
             userInfo.displayName,
-            null, // No avatar URL from basic Graph API
+            null,
             userInfo.id,
             'microsoft'
           ]
@@ -130,7 +130,7 @@ authRouter.post('/microsoft/token', async (req, res) => {
       res.cookie('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         sameSite: 'lax'
       });
       

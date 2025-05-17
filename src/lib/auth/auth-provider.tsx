@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => {
       console.log("Running delayed auth check");
       checkAuth();
-    }, 1000); // Increased to 1000ms for better reliability
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);

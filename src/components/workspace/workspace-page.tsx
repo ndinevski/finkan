@@ -303,7 +303,6 @@ export function WorkspacePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Projects Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">
@@ -361,7 +360,6 @@ export function WorkspacePage() {
           </div>
         </div>
 
-        {/* Team Members Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-text-light dark:text-text-dark">

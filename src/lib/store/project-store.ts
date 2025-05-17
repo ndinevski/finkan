@@ -6,16 +6,16 @@ import { useTaskStore } from './task-store';
 
 interface ProjectState {
   projects: Project[];
-  projectsByWorkspace: Record<string, Project[]>;  // Projects organized by workspace ID
+  projectsByWorkspace: Record<string, Project[]>;
   currentProject: Project | null;
   isLoading: boolean;
-  projectsLoadedWorkspaces: string[];  // Track which workspaces have had their projects loaded
+  projectsLoadedWorkspaces: string[];  
   fetchProjects: (workspaceId: string) => Promise<void>;
   fetchProject: (projectId: string) => Promise<void>;
   createProject: (workspaceId: string, name: string, description?: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   archiveProject: (projectId: string) => Promise<void>;
-  getProjectsForWorkspace: (workspaceId: string) => Project[];  // Helper to get projects for a workspace
+  getProjectsForWorkspace: (workspaceId: string) => Project[];
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
