@@ -17,6 +17,7 @@ FinKan helps users manage tasks and projects efficiently through an intuitive in
   - Comments and attachments
 - **Notifications**: Get alerted about task updates, deadlines, and assignments ( Not implemented yet )
 - **Real-time Updates**: See changes as they happen ( Not implemented yet )
+- **Invite Others**: Invite other people to your workspaces ( Not implemented yet )
 
 ## Development
 
