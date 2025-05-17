@@ -25,12 +25,10 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Task, Column } from "@/lib/db/types";
 
-// Define item types for drag and drop
 const ItemTypes = {
   TASK: "task",
 };
 
-// Define interfaces for drag and drop items
 interface DragItem {
   id: string;
   sourceColumnId: string;
@@ -41,7 +39,6 @@ interface DraggableTaskProps {
   columnId: string;
 }
 
-// Task component with drag functionality
 function DraggableTask({ task, columnId }: DraggableTaskProps) {
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemTypes.TASK,
@@ -81,7 +78,6 @@ interface DroppableColumnProps {
   onDrop: (taskId: string, columnId: string) => void;
 }
 
-// Column component with drop functionality
 function DroppableColumn({ column, children, onDrop }: DroppableColumnProps) {
   const [{ isOver }, dropRef] = useDrop({
     accept: ItemTypes.TASK,

@@ -73,8 +73,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       );
       const position = lastTaskResult.rows[0] ? lastTaskResult.rows[0].position + 1 : 0;
 
-      // Set defaults for null values
-      const status = 'todo'; // Default status
+
+      const status = 'todo'; 
       
       const queryText = `
         INSERT INTO tasks (
@@ -104,7 +104,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     await get().fetchTasks(columns.map((col) => col.id));
   },  updateTaskDetails: async (taskId, updates) => {
     try {
-      // Filter out undefined values
+
       const validUpdates = Object.entries(updates).filter(([, value]) => value !== undefined);
       if (validUpdates.length === 0) return;
 
@@ -124,7 +124,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         queryParams
       );
       
-      // Refresh tasks in this column
+
       const task = get().tasks.find((t) => t.id === taskId);
       if (task) {
         await get().fetchTasks([task.column_id]);
@@ -188,23 +188,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
   deleteColumn: async (columnId) => {
     try {
-      // First, get the project ID to refetch columns later
+
       const columns = get().columns;
       const columnToDelete = columns.find(c => c.id === columnId);
       if (!columnToDelete) return;
       
       const project_id = columnToDelete.project_id;
       
-      // Start a transaction to ensure data consistency
+
       await db.query('BEGIN');
       
-      // Delete all tasks in this column first
+
       await db.query('DELETE FROM tasks WHERE column_id = $1', [columnId]);
       
-      // Delete the column itself
+
       await db.query('DELETE FROM columns WHERE id = $1', [columnId]);
       
-      // Update positions of other columns
+
       const remainingColumns = columns
         .filter(c => c.id !== columnId)
         .sort((a, b) => a.position - b.position);
@@ -216,15 +216,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         );
       }
       
-      // Commit the transaction
+
       await db.query('COMMIT');
       
-      // Refetch columns to update the state
+
       if (project_id) {
         await get().fetchColumns(project_id);
       }
     } catch (error) {
-      // Rollback transaction on error
+
       await db.query('ROLLBACK');
       console.error('Error deleting column:', error);
       throw error;

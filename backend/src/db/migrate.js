@@ -19,7 +19,7 @@ async function runMigrations() {
     const migrationsDir = path.join(__dirname, 'migrations');
     const files = await fs.readdir(migrationsDir);
     
-    // Sort migration files to ensure they run in order
+
     const migrationFiles = files
       .filter(file => file.endsWith('.sql'))
       .sort();

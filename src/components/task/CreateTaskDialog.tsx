@@ -28,7 +28,6 @@ import { Profile, TaskPriority, TaskStatus } from "@/lib/db/types";
 import { useTaskStore } from "@/lib/store/task-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 
-// TODO: Fetch assignees (workspace members) dynamically
 const dummyAssignees: Profile[] = [
   {
     id: "assignee-1",
@@ -50,7 +49,6 @@ const dummyAssignees: Profile[] = [
   },
 ];
 
-// Explicitly define string arrays for Zod enums
 const priorityValues: [TaskPriority, ...TaskPriority[]] = [
   "low",
   "medium",
@@ -64,7 +62,6 @@ const statusValues: [TaskStatus, ...TaskStatus[]] = [
   "done",
 ];
 
-// Define base schema first (without .default() for potentially problematic fields)
 const taskBaseSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -76,7 +73,6 @@ const taskBaseSchema = z.object({
   recurrence_pattern: z.string().optional(),
 });
 
-// Apply refinement
 const taskSchema = taskBaseSchema.refine(
   (data) => {
     if (
@@ -145,7 +141,6 @@ export function CreateTaskDialog({
       JSON.stringify(data, null, 2)
     );
     try {
-      // Pre-process data to ensure correct types
       const description = data.description?.trim() || undefined;
       const priority = data.priority || "medium";
       const dueDate = data.due_date ? data.due_date.toISOString() : undefined;

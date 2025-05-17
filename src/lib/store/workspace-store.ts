@@ -5,6 +5,7 @@ import { auth } from '../auth/client';
 import { api } from '../api/client';
 import { API_BASE_URL } from "../config";
 import { useTaskStore } from './task-store';
+import { fetchWithAuth } from '../api/fetch-client';
 
 interface WorkspaceState {
   workspaces: Workspace[];
@@ -30,48 +31,75 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   members: [],
   projects: [],
   isLoading: false,
-  error: null,  fetchWorkspaces: async () => {
+  error: null,
+  
+  fetchWorkspaces: async () => {
     try {
       set({ isLoading: true, error: null });
-      const response = await fetch(`${API_BASE_URL}/workspaces`);
-      if (!response.ok) {
+      const data = await fetchWithAuth(`${API_BASE_URL}/workspaces`);
+      if (!data) {
         throw new Error("Failed to fetch workspaces");
       }
-      const workspaces = await response.json();
-      set({ workspaces });
       
-      // After loading workspaces, fetch projects for all of them
-      const { fetchProjects } = get();
-      for (const workspace of workspaces) {
-        // We don't await here to allow parallel loading
-        fetchProjects(workspace.id).catch(err => 
-          console.error(`Error loading projects for workspace ${workspace.id}:`, err)
-        );
+
+      if (Array.isArray(data) && data.length > 0) {
+        set({ workspaces: data });
+        console.log("Workspaces set in store:", data);
+        
+
+        const { fetchProjects } = get();
+        for (const workspace of data) {
+
+          fetchProjects(workspace.id).catch(err => 
+            console.error(`Error loading projects for workspace ${workspace.id}:`, err)
+          );
+        }
+      } else {
+        console.warn("API returned empty or invalid workspaces array:", data);
+        set({ workspaces: [] });
       }
     } catch (error) {
+      console.error("Error in fetchWorkspaces:", error);
       set({ error: error instanceof Error ? error.message : "Failed to fetch workspaces" });
     } finally {
       set({ isLoading: false });
     }
   },
   fetchWorkspace: async (id: string) => {
-    set({ isLoading: true });
-    const result = await db.query<Workspace>('SELECT * FROM workspaces WHERE id = $1', [id]);
-    if (result.rows[0]) {
-      set({ currentWorkspace: result.rows[0], isLoading: false });
+    try {
+      set({ isLoading: true, error: null });
+      const result = await db.query<Workspace>('SELECT * FROM workspaces WHERE id = $1', [id]);
+      if (result.rows[0]) {
+        set({ currentWorkspace: result.rows[0] });
+        console.log("Current workspace set:", result.rows[0]);
+      } else {
+        console.log("Workspace not found:", id);
+      }
+    } catch (error) {
+      console.error("Error fetching workspace:", error);
+      set({ error: error instanceof Error ? error.message : "Failed to fetch workspace" });
+    } finally {
+      set({ isLoading: false });
     }
-  },  createWorkspace: async (data) => {
+  },
+  createWorkspace: async (data) => {
     try {
       set({ isLoading: true, error: null });
       const workspace = await api.createWorkspace(data);
-      // Ensure the role is set to 'owner' for newly created workspaces
+      console.log("Created workspace:", workspace);
+      
+
       if (!workspace.role) {
         workspace.role = 'owner';
       }
-      set((state) => ({
-        workspaces: [...state.workspaces, workspace],
-      }));
+      
+      set((state) => {
+        const updatedWorkspaces = [...state.workspaces, workspace];
+        console.log("Updated workspaces after creation:", updatedWorkspaces);
+        return { workspaces: updatedWorkspaces };
+      });
     } catch (error) {
+      console.error("Error creating workspace:", error);
       set({ error: error instanceof Error ? error.message : "Failed to create workspace" });
       throw error;
     } finally {
@@ -115,7 +143,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     await db.query('BEGIN');
 
     try {
-      // Create project
+
       const projectResult = await db.query<Project>(
         'INSERT INTO projects (workspace_id, name, description, created_by) VALUES ($1, $2, $3, $4) RETURNING *',
         [workspaceId, name, description, user.id]
