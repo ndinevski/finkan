@@ -156,7 +156,7 @@ export function WorkspaceList() {
             sharedWorkspaces.map((workspace) => (
               <div
                 key={workspace.id}
-                className="mb-2 flex items-center p-3 mb-5 rounded-lg border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="mb-2 flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <span className="text-2xl mr-3">{workspace.icon || "💼"}</span>
                 <div className="text-left">

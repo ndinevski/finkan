@@ -30,8 +30,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   members: [],
   projects: [],
   isLoading: false,
-  error: null,
-  fetchWorkspaces: async () => {
+  error: null,  fetchWorkspaces: async () => {
     try {
       set({ isLoading: true, error: null });
       const response = await fetch(`${API_BASE_URL}/workspaces`);
@@ -40,6 +39,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       }
       const workspaces = await response.json();
       set({ workspaces });
+      
+      // After loading workspaces, fetch projects for all of them
+      const { fetchProjects } = get();
+      for (const workspace of workspaces) {
+        // We don't await here to allow parallel loading
+        fetchProjects(workspace.id).catch(err => 
+          console.error(`Error loading projects for workspace ${workspace.id}:`, err)
+        );
+      }
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "Failed to fetch workspaces" });
     } finally {

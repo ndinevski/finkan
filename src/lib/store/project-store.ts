@@ -6,37 +6,90 @@ import { useTaskStore } from './task-store';
 
 interface ProjectState {
   projects: Project[];
+  projectsByWorkspace: Record<string, Project[]>;  // Projects organized by workspace ID
   currentProject: Project | null;
   isLoading: boolean;
+  projectsLoadedWorkspaces: string[];  // Track which workspaces have had their projects loaded
   fetchProjects: (workspaceId: string) => Promise<void>;
   fetchProject: (projectId: string) => Promise<void>;
   createProject: (workspaceId: string, name: string, description?: string) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   archiveProject: (projectId: string) => Promise<void>;
+  getProjectsForWorkspace: (workspaceId: string) => Project[];  // Helper to get projects for a workspace
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projects: [],
+  projectsByWorkspace: {},
   currentProject: null,
   isLoading: false,
+  projectsLoadedWorkspaces: [],
+  
   fetchProjects: async (workspaceId: string) => {
+    // Check if we've already loaded projects for this workspace
+    const { projectsLoadedWorkspaces } = get();
+    
     set({ isLoading: true });
-    const result = await db.query<Project>(
-      'SELECT * FROM projects WHERE workspace_id = $1 AND is_archived = false ORDER BY created_at DESC',
-      [workspaceId]
-    );
-    set({ projects: result.rows, isLoading: false });
-  },
-  fetchProject: async (projectId: string) => {
-    set({ isLoading: true });
-    const result = await db.query<Project>(
-      'SELECT * FROM projects WHERE id = $1',
-      [projectId]
-    );
-    if (result.rows[0]) {
-      set({ currentProject: result.rows[0], isLoading: false });
+    try {
+      const result = await db.query<Project>(
+        'SELECT * FROM projects WHERE workspace_id = $1 AND is_archived = false ORDER BY created_at DESC',
+        [workspaceId]
+      );      
+      
+      // Update projects and projectsByWorkspace
+      const workspaceProjects = result.rows;
+      
+      set(state => {
+        // Create an updated projectsByWorkspace with the new projects for this workspace
+        const updatedProjectsByWorkspace = {
+          ...state.projectsByWorkspace,
+          [workspaceId]: workspaceProjects
+        };
+        
+        // Update the projects array by removing old projects for this workspace and adding new ones
+        const updatedProjects = [
+          ...state.projects.filter(p => p.workspace_id !== workspaceId), 
+          ...workspaceProjects
+        ];
+        
+        return { 
+          projects: updatedProjects,
+          projectsByWorkspace: updatedProjectsByWorkspace,
+          isLoading: false,
+          projectsLoadedWorkspaces: projectsLoadedWorkspaces.includes(workspaceId) 
+            ? projectsLoadedWorkspaces 
+            : [...projectsLoadedWorkspaces, workspaceId]
+        };
+      });
+    } catch (error) {
+      set({ isLoading: false });
+      console.error('Error fetching projects:', error);
     }
   },
+  
+  getProjectsForWorkspace: (workspaceId: string) => {
+    const { projectsByWorkspace } = get();
+    return projectsByWorkspace[workspaceId] || [];
+  },
+  
+  fetchProject: async (projectId: string) => {
+    set({ isLoading: true });
+    try {
+      const result = await db.query<Project>(
+        'SELECT * FROM projects WHERE id = $1',
+        [projectId]
+      );
+      if (result.rows[0]) {
+        set({ currentProject: result.rows[0], isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      set({ isLoading: false });
+      console.error('Error fetching project:', error);
+    }
+  },
+  
   createProject: async (workspaceId: string, name: string, description?: string) => {
     const { data: { user } } = await auth.getSession();
     if (!user) throw new Error('Not authenticated');
@@ -67,18 +120,33 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       throw error;
     }
   },
+  
   setCurrentProject: (project) => set({ currentProject: project }),
-  archiveProject: async (projectId: string) => {
+    archiveProject: async (projectId: string) => {
+    const { projects, currentProject } = get();
+    
+    // Find the project to archive to get its workspace_id
+    const projectToArchive = projects.find(p => p.id === projectId);
+    if (!projectToArchive) return;
+    
+    const workspaceId = projectToArchive.workspace_id;
+    
     await db.query(
       'UPDATE projects SET is_archived = true WHERE id = $1',
       [projectId]
     );
-    const currentProject = get().currentProject;
+    
     if (currentProject?.id === projectId) {
       set({ currentProject: null });
     }
-    if (currentProject) {
-      await get().fetchProjects(currentProject.workspace_id);
-    }
+    
+    // Update both projects array and projectsByWorkspace
+    set(state => ({
+      projects: state.projects.filter(p => p.id !== projectId),
+      projectsByWorkspace: {
+        ...state.projectsByWorkspace,
+        [workspaceId]: (state.projectsByWorkspace[workspaceId] || []).filter(p => p.id !== projectId)
+      }
+    }));
   },
 }));

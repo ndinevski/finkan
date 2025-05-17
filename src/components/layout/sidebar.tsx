@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useWorkspaceStore } from "@/lib/store/workspace-store";
 import { useProjectStore } from "@/lib/store/project-store";
-import { useAuthStore } from "@/lib/store/auth-store";
 import {
   ChevronRight,
   ChevronDown,
@@ -97,14 +96,34 @@ export function Sidebar() {
     new Set()
   );
   const { workspaces, currentWorkspace, fetchWorkspaces } = useWorkspaceStore();
-  const { projects, fetchProjects } = useProjectStore();
-  const { user } = useAuthStore();
+  const { fetchProjects, getProjectsForWorkspace } = useProjectStore();
   const location = useLocation();
+  const [projectsByWorkspace, setProjectsByWorkspace] = useState<
+    Record<string, boolean>
+  >({});
+  // Use the store's helper function to get workspace projects
 
   useEffect(() => {
     fetchWorkspaces();
   }, [fetchWorkspaces]);
 
+  // Fetch projects for all workspaces initially
+  useEffect(() => {
+    const loadAllProjects = async () => {
+      for (const workspace of workspaces) {
+        if (!projectsByWorkspace[workspace.id]) {
+          await fetchProjects(workspace.id);
+          setProjectsByWorkspace((prev) => ({ ...prev, [workspace.id]: true }));
+        }
+      }
+    };
+
+    if (workspaces.length > 0) {
+      loadAllProjects();
+    }
+  }, [workspaces, fetchProjects, projectsByWorkspace]);
+
+  // Still fetch projects when current workspace changes, for real-time updates
   useEffect(() => {
     if (currentWorkspace) {
       fetchProjects(currentWorkspace.id);
@@ -118,6 +137,8 @@ export function Sidebar() {
         next.delete(workspaceId);
       } else {
         next.add(workspaceId);
+        // Ensure projects for this workspace are loaded when expanded
+        fetchProjects(workspaceId);
       }
       return next;
     });
@@ -175,12 +196,8 @@ export function Sidebar() {
                           isActive={isWorkspaceActive(workspace.id)}
                         >
                           {expandedWorkspaces.has(workspace.id) &&
-                            projects
-                              .filter(
-                                (project) =>
-                                  project.workspace_id === workspace.id
-                              )
-                              .map((project) => (
+                            getProjectsForWorkspace(workspace.id).map(
+                              (project) => (
                                 <TreeItem
                                   key={project.id}
                                   id={project.id}
@@ -190,7 +207,8 @@ export function Sidebar() {
                                   onToggle={() => {}}
                                   isActive={isProjectActive(project.id)}
                                 />
-                              ))}
+                              )
+                            )}
                         </TreeItem>
                       ))
                     ) : (
@@ -218,12 +236,8 @@ export function Sidebar() {
                           isActive={isWorkspaceActive(workspace.id)}
                         >
                           {expandedWorkspaces.has(workspace.id) &&
-                            projects
-                              .filter(
-                                (project) =>
-                                  project.workspace_id === workspace.id
-                              )
-                              .map((project) => (
+                            getProjectsForWorkspace(workspace.id).map(
+                              (project) => (
                                 <TreeItem
                                   key={project.id}
                                   id={project.id}
@@ -233,7 +247,8 @@ export function Sidebar() {
                                   onToggle={() => {}}
                                   isActive={isProjectActive(project.id)}
                                 />
-                              ))}
+                              )
+                            )}
                         </TreeItem>
                       ))
                     ) : (
@@ -247,7 +262,7 @@ export function Sidebar() {
             </div>
           </div>
         </div>
-      )}{" "}
+      )}
       {!isOpen && (
         <Button
           variant="ghost"
