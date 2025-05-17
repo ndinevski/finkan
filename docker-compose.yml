@@ -30,6 +30,9 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=finkan
       - PORT=3000
+      - NODE_ENV=${NODE_ENV:-development}
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -43,12 +46,15 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+      - HOST=0.0.0.0
+      - NODE_ENV=${NODE_ENV:-development}
+    env_file:
+      - ./.env
     volumes:
       - .:/app
       - /app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:3000
-      - HOST=0.0.0.0
     command: npm run dev -- --host
     depends_on:
       - backend
