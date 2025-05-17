@@ -137,24 +137,23 @@ export function Sidebar() {
   const sharedWorkspaces = workspaces.filter(
     (workspace) => workspace.role !== "owner"
   );
-
   return (
     <>
       {isOpen && (
-        <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] bg-surface-light dark:bg-surface-dark transition-all duration-300 z-10 w-64">
-          <div className="p-4">
+        <div className="fixed left-0 top-16 bottom-0 bg-surface-light dark:bg-surface-dark transition-all duration-300 z-10 w-64 border-r border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="p-4 h-full flex flex-col">
             <Button
               variant="ghost"
               size="sm"
-              className="mb-4 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              className="mb-4 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-shrink-0"
               onClick={() => setIsOpen(false)}
             >
               <PanelLeft className="h-5 w-5" />
             </Button>
 
-            <div className="h-px bg-gray-200 dark:bg-gray-700 mb-4" />
+            <div className="h-px bg-gray-200 dark:bg-gray-700 mb-4 flex-shrink-0" />
 
-            <div className="space-y-1">
+            <div className="space-y-1 flex-grow overflow-y-auto pr-2 custom-scrollbar">
               <div className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
                 Workspaces
               </div>
@@ -248,12 +247,12 @@ export function Sidebar() {
             </div>
           </div>
         </div>
-      )}
+      )}{" "}
       {!isOpen && (
         <Button
           variant="ghost"
           size="sm"
-          className="fixed left-4 top-20 z-20 bg-surface-light dark:bg-surface-dark rounded-r-md shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          className="fixed left-4 top-20 z-20 bg-surface-light dark:bg-surface-dark rounded-md shadow-sm hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700"
           onClick={() => setIsOpen(true)}
         >
           <PanelLeft className="h-5 w-5" />

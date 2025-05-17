@@ -16,7 +16,7 @@ export function Header({
   onBack,
 }: HeaderProps) {
   return (
-    <header className="w-full bg-surface-light dark:bg-surface-dark shadow">
+    <header className="fixed top-0 left-0 right-0 w-full bg-surface-light dark:bg-surface-dark shadow z-20 h-16">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">

@@ -58,16 +58,16 @@ function App() {
             path="/"
             element={
               <PrivateRoute>
-                <div className="min-h-screen flex flex-col w-full">
+                <div className="flex flex-col w-full h-screen">
                   <Header
                     isDark={isDark}
                     onToggleDark={() => setIsDark(!isDark)}
                   />
-                  <div className="flex flex-1">
+                  <div className="flex pt-16 h-screen">
                     <Sidebar />
-                    <main className="flex-1 w-full ml-64">
-                      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                        <div className="px-4 py-6 sm:px-0">
+                    <main className="flex-1 ml-64 overflow-y-auto custom-scrollbar h-full pt-4">
+                      <div className="max-w-7xl mx-auto py-2 sm:px-6 lg:px-8">
+                        <div className="px-4 py-2 sm:px-0">
                           <WorkspaceList />
                         </div>
                       </div>
@@ -81,18 +81,15 @@ function App() {
             path="/workspace/:workspaceId"
             element={
               <PrivateRoute>
-                <div className="min-h-screen flex flex-col w-full">
+                <div className="flex flex-col w-full h-screen">
                   <Header
                     isDark={isDark}
                     onToggleDark={() => setIsDark(!isDark)}
                   />
-                  <div className="flex flex-1">
+                  <div className="flex pt-16 h-screen">
                     <Sidebar />
-                    <main className="flex-1 w-full ml-64">
-                      <WorkspacePage
-                        isDark={isDark}
-                        onToggleDark={() => setIsDark(!isDark)}
-                      />
+                    <main className="flex-1 ml-64 overflow-y-auto custom-scrollbar h-full pt-4">
+                      <WorkspacePage />
                     </main>
                   </div>
                 </div>
@@ -103,18 +100,15 @@ function App() {
             path="/board/:boardId"
             element={
               <PrivateRoute>
-                <div className="min-h-screen flex flex-col w-full">
+                <div className="flex flex-col w-full h-screen">
                   <Header
                     isDark={isDark}
                     onToggleDark={() => setIsDark(!isDark)}
                   />
-                  <div className="flex flex-1">
+                  <div className="flex pt-16 h-screen">
                     <Sidebar />
-                    <main className="flex-1 w-full ml-64">
-                      <ProjectBoard
-                        isDark={isDark}
-                        onToggleDark={() => setIsDark(!isDark)}
-                      />
+                    <main className="flex-1 ml-64 overflow-y-auto custom-scrollbar h-full pt-4">
+                      <ProjectBoard />
                     </main>
                   </div>
                 </div>

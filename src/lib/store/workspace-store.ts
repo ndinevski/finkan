@@ -52,11 +52,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (result.rows[0]) {
       set({ currentWorkspace: result.rows[0], isLoading: false });
     }
-  },
-  createWorkspace: async (data) => {
+  },  createWorkspace: async (data) => {
     try {
       set({ isLoading: true, error: null });
       const workspace = await api.createWorkspace(data);
+      // Ensure the role is set to 'owner' for newly created workspaces
+      if (!workspace.role) {
+        workspace.role = 'owner';
+      }
       set((state) => ({
         workspaces: [...state.workspaces, workspace],
       }));

@@ -208,9 +208,7 @@ router.post('/workspaces', async (req, res) => {
         [name, icon, description]
       );
       const workspace = workspaceResult.rows[0];
-      console.log('Created workspace:', workspace);
-
-      // Add creator as owner
+      console.log('Created workspace:', workspace);      // Add creator as owner
       const memberResult = await client.query(
         `INSERT INTO workspace_members (workspace_id, profile_id, role)
          VALUES ($1, $2, 'owner')
@@ -219,6 +217,8 @@ router.post('/workspaces', async (req, res) => {
       );
       console.log('Created workspace member:', memberResult.rows[0]);
 
+      workspace.role = 'owner';
+      
       await client.query('COMMIT');
       res.json(workspace);
     } catch (error) {
